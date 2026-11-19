@@ -13,11 +13,15 @@ type MethodCreate struct {
 	Parent         string
 	Message        string
 	UserSettableID string
+	// WithoutID leaves the user settable ID unset, so the service generates one.
+	WithoutID bool
 }
 
 func (m MethodCreate) Generate(f *protogen.GeneratedFile, request, response, err, assign string, apiMode APIMode) {
 	userSetID := m.UserSettableID
-	if userSetID == "" && HasUserSettableIDField(m.Resource, m.Method.Input.Desc) {
+	if m.WithoutID {
+		userSetID = ""
+	} else if userSetID == "" && HasUserSettableIDField(m.Resource, m.Method.Input.Desc) {
 		userSetID = "userSetID"
 		f.P(userSetID + " := \"\"")
 		f.P("if fx.IDGenerator != nil {")

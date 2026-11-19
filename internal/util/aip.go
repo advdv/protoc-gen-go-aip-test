@@ -18,6 +18,12 @@ func HasUserSettableIDField(r *annotations.ResourceDescriptor, m protoreflect.Me
 	return userSettableIDField(r, m) != nil
 }
 
+// IsUserSettableIDRequired reports whether the user settable ID field is annotated as required.
+func IsUserSettableIDRequired(r *annotations.ResourceDescriptor, m protoreflect.MessageDescriptor) bool {
+	field := userSettableIDField(r, m)
+	return field != nil && HasFieldAnnotation(field, annotations.FieldBehavior_REQUIRED)
+}
+
 func userSettableIDField(
 	r *annotations.ResourceDescriptor,
 	m protoreflect.MessageDescriptor,

@@ -347,7 +347,7 @@ func (fx *InstanceAdminInstanceTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetInstanceRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetInstance(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -396,7 +396,7 @@ func (fx *InstanceAdminInstanceTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateInstanceRequest{}
 			req.SetInstance(msg)
 			_, err := fx.Service().UpdateInstance(fx.Context(), req)
@@ -710,7 +710,7 @@ func (fx *InstanceAdminInstanceTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteInstanceRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteInstance(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -772,6 +772,11 @@ func (fx *InstanceAdminInstanceTestSuiteConfig) create(t *testing.T, parent stri
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *InstanceAdminInstanceTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type InstanceAdminInstanceConfigTestSuiteConfig struct {
@@ -892,7 +897,7 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetInstanceConfigRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetInstanceConfig(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -968,7 +973,7 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateInstanceConfigRequest{}
 			req.SetInstanceConfig(msg)
 			_, err := fx.Service().UpdateInstanceConfig(fx.Context(), req)
@@ -1192,7 +1197,7 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteInstanceConfigRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteInstanceConfig(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1266,6 +1271,11 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) create(t *testing.T, paren
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *InstanceAdminInstanceConfigTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type InstanceAdminInstancePartitionTestSuiteConfig struct {
@@ -1440,7 +1450,7 @@ func (fx *InstanceAdminInstancePartitionTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetInstancePartitionRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetInstancePartition(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1516,7 +1526,7 @@ func (fx *InstanceAdminInstancePartitionTestSuiteConfig) testUpdate(t *testing.T
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateInstancePartitionRequest{}
 			req.SetInstancePartition(msg)
 			_, err := fx.Service().UpdateInstancePartition(fx.Context(), req)
@@ -1774,7 +1784,7 @@ func (fx *InstanceAdminInstancePartitionTestSuiteConfig) testDelete(t *testing.T
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteInstancePartitionRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteInstancePartition(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1848,4 +1858,9 @@ func (fx *InstanceAdminInstancePartitionTestSuiteConfig) create(t *testing.T, pa
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *InstanceAdminInstancePartitionTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

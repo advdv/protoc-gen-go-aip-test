@@ -195,6 +195,11 @@ func (fx *GSuiteAddOnsAuthorizationTestSuiteConfig) create(t *testing.T) *Author
 	return created
 }
 
+func (fx *GSuiteAddOnsAuthorizationTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
+}
+
 type GSuiteAddOnsDeploymentTestSuiteConfig struct {
 	currParent int
 
@@ -386,7 +391,7 @@ func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetDeployment(fx.Context(), &GetDeploymentRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -602,7 +607,7 @@ func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteDeployment(fx.Context(), &DeleteDeploymentRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -680,6 +685,11 @@ func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) create(t *testing.T, parent str
 	})
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type GSuiteAddOnsInstallStatusTestSuiteConfig struct {
@@ -790,4 +800,9 @@ func (fx *GSuiteAddOnsInstallStatusTestSuiteConfig) create(t *testing.T, parent 
 	created, err := fx.CreateResource(fx.Context(), parent)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *GSuiteAddOnsInstallStatusTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

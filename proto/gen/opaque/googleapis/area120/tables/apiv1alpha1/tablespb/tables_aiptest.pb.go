@@ -223,7 +223,7 @@ func (fx *TablesServiceRowTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetRowRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetRow(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -288,7 +288,7 @@ func (fx *TablesServiceRowTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateRowRequest{}
 			req.SetRow(msg)
 			_, err := fx.Service().UpdateRow(fx.Context(), req)
@@ -512,7 +512,7 @@ func (fx *TablesServiceRowTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteRowRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteRow(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -580,6 +580,11 @@ func (fx *TablesServiceRowTestSuiteConfig) create(t *testing.T, parent string) *
 	return created
 }
 
+func (fx *TablesServiceRowTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
+}
+
 type TablesServiceTableTestSuiteConfig struct {
 	currParent int
 
@@ -643,7 +648,7 @@ func (fx *TablesServiceTableTestSuiteConfig) testGet(t *testing.T) {
 		fx.maybeSkip(t)
 		created := fx.create(t)
 		req := &GetTableRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetTable(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -697,6 +702,11 @@ func (fx *TablesServiceTableTestSuiteConfig) create(t *testing.T) *Table {
 	created, err := fx.CreateResource(fx.Context())
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *TablesServiceTableTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type TablesServiceWorkspaceTestSuiteConfig struct {
@@ -762,7 +772,7 @@ func (fx *TablesServiceWorkspaceTestSuiteConfig) testGet(t *testing.T) {
 		fx.maybeSkip(t)
 		created := fx.create(t)
 		req := &GetWorkspaceRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetWorkspace(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -816,4 +826,9 @@ func (fx *TablesServiceWorkspaceTestSuiteConfig) create(t *testing.T) *Workspace
 	created, err := fx.CreateResource(fx.Context())
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *TablesServiceWorkspaceTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

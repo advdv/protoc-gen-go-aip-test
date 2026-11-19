@@ -305,7 +305,7 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -411,7 +411,7 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.Name = created.Name + "notfound"
+			msg.Name = fx.notFoundName(created.Name)
 			_, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
 				Artifact: msg,
 			})
@@ -635,7 +635,7 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteArtifact(fx.Context(), &DeleteArtifactRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -713,6 +713,11 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) create(t *testing.T, parent st
 	})
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *MetadataServiceArtifactTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type MetadataServiceContextTestSuiteConfig struct {
@@ -855,7 +860,7 @@ func (fx *MetadataServiceContextTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -961,7 +966,7 @@ func (fx *MetadataServiceContextTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.Name = created.Name + "notfound"
+			msg.Name = fx.notFoundName(created.Name)
 			_, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
 				Context: msg,
 			})
@@ -1185,7 +1190,7 @@ func (fx *MetadataServiceContextTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteContext(fx.Context(), &DeleteContextRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1263,6 +1268,11 @@ func (fx *MetadataServiceContextTestSuiteConfig) create(t *testing.T, parent str
 	})
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *MetadataServiceContextTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type MetadataServiceExecutionTestSuiteConfig struct {
@@ -1405,7 +1415,7 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1511,7 +1521,7 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.Name = created.Name + "notfound"
+			msg.Name = fx.notFoundName(created.Name)
 			_, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
 				Execution: msg,
 			})
@@ -1735,7 +1745,7 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteExecution(fx.Context(), &DeleteExecutionRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1813,6 +1823,11 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) create(t *testing.T, parent s
 	})
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *MetadataServiceExecutionTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type MetadataServiceMetadataSchemaTestSuiteConfig struct {
@@ -1960,7 +1975,7 @@ func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetMetadataSchema(fx.Context(), &GetMetadataSchemaRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -2140,6 +2155,11 @@ func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) create(t *testing.T, par
 	return created
 }
 
+func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
+}
+
 type MetadataServiceMetadataStoreTestSuiteConfig struct {
 	currParent int
 
@@ -2255,7 +2275,7 @@ func (fx *MetadataServiceMetadataStoreTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetMetadataStore(fx.Context(), &GetMetadataStoreRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -2471,7 +2491,7 @@ func (fx *MetadataServiceMetadataStoreTestSuiteConfig) testDelete(t *testing.T) 
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteMetadataStore(fx.Context(), &DeleteMetadataStoreRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -2533,4 +2553,9 @@ func (fx *MetadataServiceMetadataStoreTestSuiteConfig) create(t *testing.T, pare
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *MetadataServiceMetadataStoreTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

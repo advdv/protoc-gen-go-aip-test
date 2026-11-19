@@ -192,7 +192,7 @@ func (fx *IndexServiceIndexTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetIndexRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetIndex(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -268,7 +268,7 @@ func (fx *IndexServiceIndexTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateIndexRequest{}
 			req.SetIndex(msg)
 			_, err := fx.Service().UpdateIndex(fx.Context(), req)
@@ -536,7 +536,7 @@ func (fx *IndexServiceIndexTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteIndexRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteIndex(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -598,4 +598,9 @@ func (fx *IndexServiceIndexTestSuiteConfig) create(t *testing.T, parent string) 
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *IndexServiceIndexTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

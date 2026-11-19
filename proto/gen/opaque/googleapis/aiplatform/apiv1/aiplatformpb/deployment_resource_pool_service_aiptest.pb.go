@@ -202,7 +202,7 @@ func (fx *DeploymentResourcePoolServiceDeploymentResourcePoolTestSuiteConfig) te
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetDeploymentResourcePoolRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetDeploymentResourcePool(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -418,7 +418,7 @@ func (fx *DeploymentResourcePoolServiceDeploymentResourcePoolTestSuiteConfig) te
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteDeploymentResourcePoolRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteDeploymentResourcePool(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -480,4 +480,9 @@ func (fx *DeploymentResourcePoolServiceDeploymentResourcePoolTestSuiteConfig) cr
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *DeploymentResourcePoolServiceDeploymentResourcePoolTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

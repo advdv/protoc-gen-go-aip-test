@@ -65,6 +65,15 @@ var HasUserSettableID = onlyIf{
 }
 
 //nolint:gochecknoglobals
+var UserSettableIDNotRequired = onlyIf{
+	f: func(scope suite.Scope) bool {
+		method, ok := util.StandardMethod(scope.Service, scope.Resource, aipreflect.MethodTypeCreate)
+		return ok && !util.IsUserSettableIDRequired(scope.Resource, method.Input.Desc)
+	},
+	doc: "user settable ID is not required",
+}
+
+//nolint:gochecknoglobals
 var HasUpdateMask = onlyIf{
 	f: func(scope suite.Scope) bool {
 		method, ok := util.StandardMethod(scope.Service, scope.Resource, aipreflect.MethodTypeUpdate)

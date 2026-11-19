@@ -274,7 +274,7 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetTensorboardRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetTensorboard(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -350,7 +350,7 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) testUpdate(t *testing.T)
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateTensorboardRequest{}
 			req.SetTensorboard(msg)
 			_, err := fx.Service().UpdateTensorboard(fx.Context(), req)
@@ -618,7 +618,7 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) testDelete(t *testing.T)
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteTensorboardRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteTensorboard(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -680,6 +680,11 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) create(t *testing.T, par
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *TensorboardServiceTensorboardTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type TensorboardServiceTensorboardExperimentTestSuiteConfig struct {
@@ -822,7 +827,7 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testGet(t *tes
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetTensorboardExperimentRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetTensorboardExperiment(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -928,7 +933,7 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testUpdate(t *
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateTensorboardExperimentRequest{}
 			req.SetTensorboardExperiment(msg)
 			_, err := fx.Service().UpdateTensorboardExperiment(fx.Context(), req)
@@ -1152,7 +1157,7 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testDelete(t *
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteTensorboardExperimentRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteTensorboardExperiment(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1218,6 +1223,11 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) create(t *test
 	created, err := fx.Service().CreateTensorboardExperiment(fx.Context(), req)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type TensorboardServiceTensorboardRunTestSuiteConfig struct {
@@ -1382,7 +1392,7 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testGet(t *testing.T)
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetTensorboardRunRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetTensorboardRun(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1506,7 +1516,7 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testUpdate(t *testing
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateTensorboardRunRequest{}
 			req.SetTensorboardRun(msg)
 			_, err := fx.Service().UpdateTensorboardRun(fx.Context(), req)
@@ -1755,7 +1765,7 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testDelete(t *testing
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteTensorboardRunRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteTensorboardRun(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1821,6 +1831,11 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) create(t *testing.T, 
 	created, err := fx.Service().CreateTensorboardRun(fx.Context(), req)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type TensorboardServiceTensorboardTimeSeriesTestSuiteConfig struct {
@@ -2001,7 +2016,7 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testGet(t *tes
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetTensorboardTimeSeriesRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetTensorboardTimeSeries(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -2125,7 +2140,7 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testUpdate(t *
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateTensorboardTimeSeriesRequest{}
 			req.SetTensorboardTimeSeries(msg)
 			_, err := fx.Service().UpdateTensorboardTimeSeries(fx.Context(), req)
@@ -2374,7 +2389,7 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testDelete(t *
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteTensorboardTimeSeriesRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteTensorboardTimeSeries(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -2440,4 +2455,9 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) create(t *test
 	created, err := fx.Service().CreateTensorboardTimeSeries(fx.Context(), req)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

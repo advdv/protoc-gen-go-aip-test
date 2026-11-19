@@ -262,7 +262,7 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) testG
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetFeatureOnlineStore(fx.Context(), &GetFeatureOnlineStoreRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -338,7 +338,7 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) testU
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.Name = created.Name + "notfound"
+			msg.Name = fx.notFoundName(created.Name)
 			_, err := fx.Service().UpdateFeatureOnlineStore(fx.Context(), &UpdateFeatureOnlineStoreRequest{
 				FeatureOnlineStore: msg,
 			})
@@ -625,7 +625,7 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) testD
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteFeatureOnlineStore(fx.Context(), &DeleteFeatureOnlineStoreRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -687,6 +687,11 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) creat
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig struct {
@@ -840,7 +845,7 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) testGet(t *t
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetFeatureView(fx.Context(), &GetFeatureViewRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -916,7 +921,7 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) testUpdate(t
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.Name = created.Name + "notfound"
+			msg.Name = fx.notFoundName(created.Name)
 			_, err := fx.Service().UpdateFeatureView(fx.Context(), &UpdateFeatureViewRequest{
 				FeatureView: msg,
 			})
@@ -1203,7 +1208,7 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) testDelete(t
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteFeatureView(fx.Context(), &DeleteFeatureViewRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1265,6 +1270,11 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) create(t *te
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type FeatureOnlineStoreAdminServiceFeatureViewSyncTestSuiteConfig struct {
@@ -1337,7 +1347,7 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewSyncTestSuiteConfig) testGet(
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetFeatureViewSync(fx.Context(), &GetFeatureViewSyncRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1515,4 +1525,9 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewSyncTestSuiteConfig) create(t
 	created, err := fx.CreateResource(fx.Context(), parent)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *FeatureOnlineStoreAdminServiceFeatureViewSyncTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

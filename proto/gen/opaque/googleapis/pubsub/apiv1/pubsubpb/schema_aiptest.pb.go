@@ -186,7 +186,7 @@ func (fx *SchemaServiceSchemaTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetSchemaRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetSchema(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -402,7 +402,7 @@ func (fx *SchemaServiceSchemaTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteSchemaRevisionRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteSchemaRevision(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -468,4 +468,9 @@ func (fx *SchemaServiceSchemaTestSuiteConfig) create(t *testing.T, parent string
 	created, err := fx.Service().CreateSchema(fx.Context(), req)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *SchemaServiceSchemaTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

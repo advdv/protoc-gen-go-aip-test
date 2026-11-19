@@ -208,7 +208,7 @@ func (fx *IndexEndpointServiceIndexEndpointTestSuiteConfig) testGet(t *testing.T
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetIndexEndpointRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetIndexEndpoint(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -320,7 +320,7 @@ func (fx *IndexEndpointServiceIndexEndpointTestSuiteConfig) testUpdate(t *testin
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateIndexEndpointRequest{}
 			req.SetIndexEndpoint(msg)
 			_, err := fx.Service().UpdateIndexEndpoint(fx.Context(), req)
@@ -607,7 +607,7 @@ func (fx *IndexEndpointServiceIndexEndpointTestSuiteConfig) testDelete(t *testin
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteIndexEndpointRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteIndexEndpoint(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -669,4 +669,9 @@ func (fx *IndexEndpointServiceIndexEndpointTestSuiteConfig) create(t *testing.T,
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *IndexEndpointServiceIndexEndpointTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

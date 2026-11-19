@@ -208,7 +208,7 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetEntityTypeRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetEntityType(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -302,7 +302,7 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) testUpdate(t *testing.T)
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateEntityTypeRequest{}
 			req.SetEntityType(msg)
 			_, err := fx.Service().UpdateEntityType(fx.Context(), req)
@@ -526,7 +526,7 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) testDelete(t *testing.T)
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteEntityTypeRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteEntityType(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -590,6 +590,11 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) create(t *testing.T, par
 	return nil
 }
 
+func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
+}
+
 type FeaturestoreServiceFeatureTestSuiteConfig struct {
 	currParent int
 
@@ -608,7 +613,10 @@ type FeaturestoreServiceFeatureTestSuiteConfig struct {
 	// all required fields set.
 	Create func(parent string) *Feature
 	// IDGenerator should return a valid and unique ID to use in the Create call.
-	// If non-nil, this function will be called to set the ID on all Create calls.
+	// If non-nil, this function will be called to set the ID on all Create calls,
+	// except in the test of system generated IDs, and to make the IDs that the
+	// user settable ID, already exists, and not found tests use.
+	// If nil, those tests use fixed IDs that conform to RFC-1034, such as "usersetid".
 	// If the ID field is required, tests will fail if this is nil.
 	IDGenerator func() string
 	// Update should return a resource which is valid to update, i.e.
@@ -701,7 +709,7 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetFeatureRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetFeature(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -795,7 +803,7 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateFeatureRequest{}
 			req.SetFeature(msg)
 			_, err := fx.Service().UpdateFeature(fx.Context(), req)
@@ -1019,7 +1027,7 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteFeatureRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteFeature(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1081,6 +1089,22 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) create(t *testing.T, parent
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *FeaturestoreServiceFeatureTestSuiteConfig) userSettableID(fallback string) string {
+	if fx.IDGenerator != nil {
+		return fx.IDGenerator()
+	}
+	return fallback
+}
+
+func (fx *FeaturestoreServiceFeatureTestSuiteConfig) notFoundName(name string) string {
+	if fx.IDGenerator != nil {
+		// replacing the ID with a new one keeps the name valid for the service's ID format
+		return name[:strings.LastIndex(name, "/")+1] + fx.IDGenerator()
+	}
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type FeaturestoreServiceFeaturestoreTestSuiteConfig struct {
@@ -1218,7 +1242,7 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) testGet(t *testing.T) 
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetFeaturestoreRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetFeaturestore(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1294,7 +1318,7 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) testUpdate(t *testing.
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateFeaturestoreRequest{}
 			req.SetFeaturestore(msg)
 			_, err := fx.Service().UpdateFeaturestore(fx.Context(), req)
@@ -1562,7 +1586,7 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) testDelete(t *testing.
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteFeaturestoreRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteFeaturestore(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1624,4 +1648,9 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) create(t *testing.T, p
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

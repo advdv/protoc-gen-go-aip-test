@@ -30,11 +30,12 @@ var alreadyExists = suite.Test{
 		if util.HasParent(scope.Resource) {
 			f.P("parent := ", ident.FixtureNextParent, "(t, false)")
 		}
+		f.P("userSetID := ", ident.FixtureUserSettableID, "(", strconv.Quote("alreadyexists"), ")")
 		m := util.MethodCreate{
 			Resource:       scope.Resource,
 			Method:         createMethod,
 			Parent:         "parent",
-			UserSettableID: strconv.Quote("alreadyexists"),
+			UserSettableID: "userSetID",
 		}
 		m.Generate(f, "req1", "_", "err", ":=", apiMode)
 		f.P(ident.AssertNilError, "(t, err)")

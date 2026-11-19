@@ -324,7 +324,7 @@ func (fx *ScheduleServiceScheduleTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -419,7 +419,7 @@ func (fx *ScheduleServiceScheduleTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.Name = created.Name + "notfound"
+			msg.Name = fx.notFoundName(created.Name)
 			_, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
 				Schedule: msg,
 			})
@@ -763,7 +763,7 @@ func (fx *ScheduleServiceScheduleTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteSchedule(fx.Context(), &DeleteScheduleRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -829,4 +829,9 @@ func (fx *ScheduleServiceScheduleTestSuiteConfig) create(t *testing.T, parent st
 	})
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *ScheduleServiceScheduleTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

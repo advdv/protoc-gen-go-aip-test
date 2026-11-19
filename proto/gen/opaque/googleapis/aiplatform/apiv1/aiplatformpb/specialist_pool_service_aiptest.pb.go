@@ -192,7 +192,7 @@ func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) testGet(t *testing
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetSpecialistPoolRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetSpecialistPool(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -241,7 +241,7 @@ func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) testUpdate(t *test
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateSpecialistPoolRequest{}
 			req.SetSpecialistPool(msg)
 			_, err := fx.Service().UpdateSpecialistPool(fx.Context(), req)
@@ -509,7 +509,7 @@ func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) testDelete(t *test
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteSpecialistPoolRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteSpecialistPool(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -571,4 +571,9 @@ func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) create(t *testing.
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

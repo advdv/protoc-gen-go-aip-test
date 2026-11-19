@@ -659,7 +659,7 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetBatchPredictionJob(fx.Context(), &GetBatchPredictionJobRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -875,7 +875,7 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) testDelete(t *testing.T) 
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteBatchPredictionJob(fx.Context(), &DeleteBatchPredictionJobRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -941,6 +941,11 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) create(t *testing.T, pare
 	})
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *JobServiceBatchPredictionJobTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type JobServiceCustomJobTestSuiteConfig struct {
@@ -1234,7 +1239,7 @@ func (fx *JobServiceCustomJobTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetCustomJob(fx.Context(), &GetCustomJobRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1450,7 +1455,7 @@ func (fx *JobServiceCustomJobTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteCustomJob(fx.Context(), &DeleteCustomJobRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1516,6 +1521,11 @@ func (fx *JobServiceCustomJobTestSuiteConfig) create(t *testing.T, parent string
 	})
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *JobServiceCustomJobTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type JobServiceDataLabelingJobTestSuiteConfig struct {
@@ -1781,7 +1791,7 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetDataLabelingJob(fx.Context(), &GetDataLabelingJobRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1997,7 +2007,7 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteDataLabelingJob(fx.Context(), &DeleteDataLabelingJobRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -2063,6 +2073,11 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) create(t *testing.T, parent 
 	})
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *JobServiceDataLabelingJobTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type JobServiceHyperparameterTuningJobTestSuiteConfig struct {
@@ -2436,7 +2451,7 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) testGet(t *testing.T
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetHyperparameterTuningJob(fx.Context(), &GetHyperparameterTuningJobRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -2652,7 +2667,7 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) testDelete(t *testin
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteHyperparameterTuningJob(fx.Context(), &DeleteHyperparameterTuningJobRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -2718,6 +2733,11 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) create(t *testing.T,
 	})
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type JobServiceModelDeploymentMonitoringJobTestSuiteConfig struct {
@@ -3018,7 +3038,7 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testGet(t *test
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetModelDeploymentMonitoringJob(fx.Context(), &GetModelDeploymentMonitoringJobRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -3067,7 +3087,7 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testUpdate(t *t
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.Name = created.Name + "notfound"
+			msg.Name = fx.notFoundName(created.Name)
 			_, err := fx.Service().UpdateModelDeploymentMonitoringJob(fx.Context(), &UpdateModelDeploymentMonitoringJobRequest{
 				ModelDeploymentMonitoringJob: msg,
 			})
@@ -3449,7 +3469,7 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testDelete(t *t
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteModelDeploymentMonitoringJob(fx.Context(), &DeleteModelDeploymentMonitoringJobRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -3515,6 +3535,11 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) create(t *testi
 	})
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type JobServiceNasJobTestSuiteConfig struct {
@@ -3952,7 +3977,7 @@ func (fx *JobServiceNasJobTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetNasJob(fx.Context(), &GetNasJobRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -4168,7 +4193,7 @@ func (fx *JobServiceNasJobTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteNasJob(fx.Context(), &DeleteNasJobRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -4234,6 +4259,11 @@ func (fx *JobServiceNasJobTestSuiteConfig) create(t *testing.T, parent string) *
 	})
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *JobServiceNasJobTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type JobServiceNasTrialDetailTestSuiteConfig struct {
@@ -4306,7 +4336,7 @@ func (fx *JobServiceNasTrialDetailTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetNasTrialDetail(fx.Context(), &GetNasTrialDetailRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -4484,4 +4514,9 @@ func (fx *JobServiceNasTrialDetailTestSuiteConfig) create(t *testing.T, parent s
 	created, err := fx.CreateResource(fx.Context(), parent)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *JobServiceNasTrialDetailTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

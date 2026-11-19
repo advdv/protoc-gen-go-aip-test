@@ -122,7 +122,7 @@ func (fx *PublisherTopicTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateTopicRequest{}
 			req.SetTopic(msg)
 			_, err := fx.Service().UpdateTopic(fx.Context(), req)
@@ -302,6 +302,11 @@ func (fx *PublisherTopicTestSuiteConfig) create(t *testing.T, parent string) *To
 	return created
 }
 
+func (fx *PublisherTopicTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
+}
+
 // SubscriberTestSuiteConfigProvider is the interface to implement to decide which resources
 // that should be tested and how it's configured.
 type SubscriberTestSuiteConfigProvider interface {
@@ -438,7 +443,7 @@ func (fx *SubscriberSnapshotTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateSnapshotRequest{}
 			req.SetSnapshot(msg)
 			_, err := fx.Service().UpdateSnapshot(fx.Context(), req)
@@ -496,6 +501,11 @@ func (fx *SubscriberSnapshotTestSuiteConfig) create(t *testing.T, parent string)
 	created, err := fx.CreateResource(fx.Context(), parent)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *SubscriberSnapshotTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type SubscriberSubscriptionTestSuiteConfig struct {
@@ -565,7 +575,7 @@ func (fx *SubscriberSubscriptionTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateSubscriptionRequest{}
 			req.SetSubscription(msg)
 			_, err := fx.Service().UpdateSubscription(fx.Context(), req)
@@ -686,4 +696,9 @@ func (fx *SubscriberSubscriptionTestSuiteConfig) create(t *testing.T, parent str
 	created, err := fx.CreateResource(fx.Context(), parent)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *SubscriberSubscriptionTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

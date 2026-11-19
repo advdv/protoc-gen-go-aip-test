@@ -102,7 +102,10 @@ type FeatureRegistryServiceFeatureTestSuiteConfig struct {
 	// all required fields set.
 	Create func(parent string) *Feature
 	// IDGenerator should return a valid and unique ID to use in the Create call.
-	// If non-nil, this function will be called to set the ID on all Create calls.
+	// If non-nil, this function will be called to set the ID on all Create calls,
+	// except in the test of system generated IDs, and to make the IDs that the
+	// user settable ID, already exists, and not found tests use.
+	// If nil, those tests use fixed IDs that conform to RFC-1034, such as "usersetid".
 	// If the ID field is required, tests will fail if this is nil.
 	IDGenerator func() string
 	// Update should return a resource which is valid to update, i.e.
@@ -195,7 +198,7 @@ func (fx *FeatureRegistryServiceFeatureTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetFeatureRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetFeature(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -271,7 +274,7 @@ func (fx *FeatureRegistryServiceFeatureTestSuiteConfig) testUpdate(t *testing.T)
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateFeatureRequest{}
 			req.SetFeature(msg)
 			_, err := fx.Service().UpdateFeature(fx.Context(), req)
@@ -495,7 +498,7 @@ func (fx *FeatureRegistryServiceFeatureTestSuiteConfig) testDelete(t *testing.T)
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteFeatureRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteFeature(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -559,6 +562,22 @@ func (fx *FeatureRegistryServiceFeatureTestSuiteConfig) create(t *testing.T, par
 	return nil
 }
 
+func (fx *FeatureRegistryServiceFeatureTestSuiteConfig) userSettableID(fallback string) string {
+	if fx.IDGenerator != nil {
+		return fx.IDGenerator()
+	}
+	return fallback
+}
+
+func (fx *FeatureRegistryServiceFeatureTestSuiteConfig) notFoundName(name string) string {
+	if fx.IDGenerator != nil {
+		// replacing the ID with a new one keeps the name valid for the service's ID format
+		return name[:strings.LastIndex(name, "/")+1] + fx.IDGenerator()
+	}
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
+}
+
 type FeatureRegistryServiceFeatureGroupTestSuiteConfig struct {
 	currParent int
 
@@ -577,7 +596,10 @@ type FeatureRegistryServiceFeatureGroupTestSuiteConfig struct {
 	// all required fields set.
 	Create func(parent string) *FeatureGroup
 	// IDGenerator should return a valid and unique ID to use in the Create call.
-	// If non-nil, this function will be called to set the ID on all Create calls.
+	// If non-nil, this function will be called to set the ID on all Create calls,
+	// except in the test of system generated IDs, and to make the IDs that the
+	// user settable ID, already exists, and not found tests use.
+	// If nil, those tests use fixed IDs that conform to RFC-1034, such as "usersetid".
 	// If the ID field is required, tests will fail if this is nil.
 	IDGenerator func() string
 	// Update should return a resource which is valid to update, i.e.
@@ -718,7 +740,7 @@ func (fx *FeatureRegistryServiceFeatureGroupTestSuiteConfig) testGet(t *testing.
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetFeatureGroupRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetFeatureGroup(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -794,7 +816,7 @@ func (fx *FeatureRegistryServiceFeatureGroupTestSuiteConfig) testUpdate(t *testi
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateFeatureGroupRequest{}
 			req.SetFeatureGroup(msg)
 			_, err := fx.Service().UpdateFeatureGroup(fx.Context(), req)
@@ -1043,7 +1065,7 @@ func (fx *FeatureRegistryServiceFeatureGroupTestSuiteConfig) testDelete(t *testi
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteFeatureGroupRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteFeatureGroup(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1105,4 +1127,20 @@ func (fx *FeatureRegistryServiceFeatureGroupTestSuiteConfig) create(t *testing.T
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *FeatureRegistryServiceFeatureGroupTestSuiteConfig) userSettableID(fallback string) string {
+	if fx.IDGenerator != nil {
+		return fx.IDGenerator()
+	}
+	return fallback
+}
+
+func (fx *FeatureRegistryServiceFeatureGroupTestSuiteConfig) notFoundName(name string) string {
+	if fx.IDGenerator != nil {
+		// replacing the ID with a new one keeps the name valid for the service's ID format
+		return name[:strings.LastIndex(name, "/")+1] + fx.IDGenerator()
+	}
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

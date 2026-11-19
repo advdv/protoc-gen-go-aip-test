@@ -190,7 +190,7 @@ func (fx *CloudSchedulerJobTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -255,7 +255,7 @@ func (fx *CloudSchedulerJobTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.Name = created.Name + "notfound"
+			msg.Name = fx.notFoundName(created.Name)
 			_, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
 				Job: msg,
 			})
@@ -479,7 +479,7 @@ func (fx *CloudSchedulerJobTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteJob(fx.Context(), &DeleteJobRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -545,4 +545,9 @@ func (fx *CloudSchedulerJobTestSuiteConfig) create(t *testing.T, parent string) 
 	})
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *CloudSchedulerJobTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

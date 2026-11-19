@@ -277,7 +277,7 @@ func (fx *VizierServiceStudyTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetStudy(fx.Context(), &GetStudyRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -493,7 +493,7 @@ func (fx *VizierServiceStudyTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteStudy(fx.Context(), &DeleteStudyRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -559,6 +559,11 @@ func (fx *VizierServiceStudyTestSuiteConfig) create(t *testing.T, parent string)
 	})
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *VizierServiceStudyTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type VizierServiceTrialTestSuiteConfig struct {
@@ -670,7 +675,7 @@ func (fx *VizierServiceTrialTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetTrial(fx.Context(), &GetTrialRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -886,7 +891,7 @@ func (fx *VizierServiceTrialTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteTrial(fx.Context(), &DeleteTrialRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -952,4 +957,9 @@ func (fx *VizierServiceTrialTestSuiteConfig) create(t *testing.T, parent string)
 	})
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *VizierServiceTrialTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

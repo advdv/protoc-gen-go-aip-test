@@ -186,7 +186,7 @@ func (fx *ModelServiceModelTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetModelRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetModel(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -298,7 +298,7 @@ func (fx *ModelServiceModelTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateModelRequest{}
 			req.SetModel(msg)
 			_, err := fx.Service().UpdateModel(fx.Context(), req)
@@ -699,7 +699,7 @@ func (fx *ModelServiceModelTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteModelRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteModel(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -765,6 +765,11 @@ func (fx *ModelServiceModelTestSuiteConfig) create(t *testing.T, parent string) 
 	created, err := fx.CreateResource(fx.Context(), parent)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *ModelServiceModelTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type ModelServiceModelEvaluationTestSuiteConfig struct {
@@ -837,7 +842,7 @@ func (fx *ModelServiceModelEvaluationTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetModelEvaluationRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetModelEvaluation(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1017,6 +1022,11 @@ func (fx *ModelServiceModelEvaluationTestSuiteConfig) create(t *testing.T, paren
 	return created
 }
 
+func (fx *ModelServiceModelEvaluationTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
+}
+
 type ModelServiceModelEvaluationSliceTestSuiteConfig struct {
 	currParent int
 
@@ -1087,7 +1097,7 @@ func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) testGet(t *testing.T)
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetModelEvaluationSliceRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetModelEvaluationSlice(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1265,4 +1275,9 @@ func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) create(t *testing.T, 
 	created, err := fx.CreateResource(fx.Context(), parent)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

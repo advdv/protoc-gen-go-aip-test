@@ -229,7 +229,7 @@ func (fx *EndpointServiceEndpointTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetEndpoint(fx.Context(), &GetEndpointRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -341,7 +341,7 @@ func (fx *EndpointServiceEndpointTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.Name = created.Name + "notfound"
+			msg.Name = fx.notFoundName(created.Name)
 			_, err := fx.Service().UpdateEndpoint(fx.Context(), &UpdateEndpointRequest{
 				Endpoint: msg,
 			})
@@ -628,7 +628,7 @@ func (fx *EndpointServiceEndpointTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteEndpoint(fx.Context(), &DeleteEndpointRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -690,4 +690,9 @@ func (fx *EndpointServiceEndpointTestSuiteConfig) create(t *testing.T, parent st
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *EndpointServiceEndpointTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

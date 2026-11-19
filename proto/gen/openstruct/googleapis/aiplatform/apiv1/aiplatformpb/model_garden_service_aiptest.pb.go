@@ -123,7 +123,7 @@ func (fx *ModelGardenServicePublisherModelTestSuiteConfig) testGet(t *testing.T)
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetPublisherModel(fx.Context(), &GetPublisherModelRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -173,4 +173,9 @@ func (fx *ModelGardenServicePublisherModelTestSuiteConfig) create(t *testing.T, 
 	created, err := fx.CreateResource(fx.Context(), parent)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *ModelGardenServicePublisherModelTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

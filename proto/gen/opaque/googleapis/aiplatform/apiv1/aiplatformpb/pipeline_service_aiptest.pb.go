@@ -266,7 +266,7 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetPipelineJobRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetPipelineJob(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -482,7 +482,7 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeletePipelineJobRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeletePipelineJob(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -548,6 +548,11 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) create(t *testing.T, parent
 	created, err := fx.Service().CreatePipelineJob(fx.Context(), req)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *PipelineServicePipelineJobTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type PipelineServiceTrainingPipelineTestSuiteConfig struct {
@@ -1053,7 +1058,7 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) testGet(t *testing.T) 
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetTrainingPipelineRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetTrainingPipeline(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1269,7 +1274,7 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) testDelete(t *testing.
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteTrainingPipelineRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteTrainingPipeline(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1335,4 +1340,9 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) create(t *testing.T, p
 	created, err := fx.Service().CreateTrainingPipeline(fx.Context(), req)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

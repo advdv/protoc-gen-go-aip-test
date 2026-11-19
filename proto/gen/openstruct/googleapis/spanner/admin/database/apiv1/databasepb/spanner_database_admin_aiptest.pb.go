@@ -229,7 +229,7 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetBackup(fx.Context(), &GetBackupRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -294,7 +294,7 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.Name = created.Name + "notfound"
+			msg.Name = fx.notFoundName(created.Name)
 			_, err := fx.Service().UpdateBackup(fx.Context(), &UpdateBackupRequest{
 				Backup: msg,
 			})
@@ -518,7 +518,7 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteBackup(fx.Context(), &DeleteBackupRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -580,6 +580,11 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) create(t *testing.T, parent string
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *DatabaseAdminBackupTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type DatabaseAdminDatabaseTestSuiteConfig struct {
@@ -656,7 +661,7 @@ func (fx *DatabaseAdminDatabaseTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		_, err := fx.Service().GetDatabase(fx.Context(), &GetDatabaseRequest{
-			Name: created.Name + "notfound",
+			Name: fx.notFoundName(created.Name),
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -705,7 +710,7 @@ func (fx *DatabaseAdminDatabaseTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.Name = created.Name + "notfound"
+			msg.Name = fx.notFoundName(created.Name)
 			_, err := fx.Service().UpdateDatabase(fx.Context(), &UpdateDatabaseRequest{
 				Database: msg,
 			})
@@ -918,6 +923,11 @@ func (fx *DatabaseAdminDatabaseTestSuiteConfig) create(t *testing.T, parent stri
 	return created
 }
 
+func (fx *DatabaseAdminDatabaseTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
+}
+
 type DatabaseAdminDatabaseRoleTestSuiteConfig struct {
 	currParent int
 
@@ -1111,4 +1121,9 @@ func (fx *DatabaseAdminDatabaseRoleTestSuiteConfig) create(t *testing.T, parent 
 	created, err := fx.CreateResource(fx.Context(), parent)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *DatabaseAdminDatabaseRoleTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

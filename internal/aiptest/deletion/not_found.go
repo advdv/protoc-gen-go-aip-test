@@ -33,8 +33,7 @@ var notFound = suite.Test{
 			Resource:    scope.Resource,
 			Method:      deleteMethod,
 			ResourceVar: "created",
-			// appending to the resource name ensures it is valid
-			Name: util.FieldGet("created", "Name", apiMode) + " + \"notfound\"",
+			Name:        ident.FixtureNotFoundName + "(" + util.FieldGet("created", "Name", apiMode) + ")",
 		}.Generate(f, "req", "_", "err", ":=", apiMode)
 		ident.AssertCode(f, scope.Runtime, codes.NotFound)
 		return nil

@@ -28,6 +28,8 @@ func (r *resourceGenerator) Generate(f *protogen.GeneratedFile) error {
 	r.generateParentMethods(f)
 	r.generateSkip(f)
 	r.generateCreate(f)
+	r.generateUserSettableID(f)
+	r.generateNotFoundName(f)
 	return nil
 }
 
@@ -67,7 +69,10 @@ func (r *resourceGenerator) generateFixture(f *protogen.GeneratedFile) {
 
 		if util.HasUserSettableIDField(r.resource, createMethod.Input.Desc) {
 			f.P("// IDGenerator should return a valid and unique ID to use in the Create call.")
-			f.P("// If non-nil, this function will be called to set the ID on all Create calls.")
+			f.P("// If non-nil, this function will be called to set the ID on all Create calls,")
+			f.P("// except in the test of system generated IDs, and to make the IDs that the")
+			f.P("// user settable ID, already exists, and not found tests use.")
+			f.P("// If nil, those tests use fixed IDs that conform to RFC-1034, such as \"usersetid\".")
 			f.P("// If the ID field is required, tests will fail if this is nil.")
 			f.P("IDGenerator func() string")
 		}
@@ -293,4 +298,46 @@ func (r *resourceGenerator) generateParentMethods(f *protogen.GeneratedFile) {
 	f.P("return fx.Parents[next]")
 	f.P("}")
 	f.P()
+}
+
+// hasUserSettableID reports whether the resource's Create method takes a user settable ID,
+// which is when its config has an IDGenerator.
+func (r *resourceGenerator) hasUserSettableID() bool {
+	createMethod, hasCreate := util.StandardMethod(r.service, r.resource, aipreflect.MethodTypeCreate)
+	return hasCreate && util.HasUserSettableIDField(r.resource, createMethod.Input.Desc)
+}
+
+func (r *resourceGenerator) generateUserSettableID(f *protogen.GeneratedFile) {
+	if !r.hasUserSettableID() {
+		return
+	}
+	f.P()
+	f.P(
+		"func (fx *",
+		resourceTestSuiteConfigName(r.service.Desc, r.resource),
+		") userSettableID(fallback string) string {",
+	)
+	f.P("if fx.IDGenerator != nil {")
+	f.P("return fx.IDGenerator()")
+	f.P("}")
+	f.P("return fallback")
+	f.P("}")
+}
+
+func (r *resourceGenerator) generateNotFoundName(f *protogen.GeneratedFile) {
+	stringsLastIndex := f.QualifiedGoIdent(protogen.GoIdent{
+		GoName:       "LastIndex",
+		GoImportPath: "strings",
+	})
+	f.P()
+	f.P("func (fx *", resourceTestSuiteConfigName(r.service.Desc, r.resource), ") notFoundName(name string) string {")
+	if r.hasUserSettableID() {
+		f.P("if fx.IDGenerator != nil {")
+		f.P("// replacing the ID with a new one keeps the name valid for the service's ID format")
+		f.P("return name[:", stringsLastIndex, "(name, \"/\")+1] + fx.IDGenerator()")
+		f.P("}")
+	}
+	f.P("// appending to the resource name ensures it is valid")
+	f.P("return name + \"notfound\"")
+	f.P("}")
 }

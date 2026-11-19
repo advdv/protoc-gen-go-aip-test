@@ -387,6 +387,11 @@ func (fx *DatasetServiceAnnotationTestSuiteConfig) create(t *testing.T, parent s
 	return created
 }
 
+func (fx *DatasetServiceAnnotationTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
+}
+
 type DatasetServiceAnnotationSpecTestSuiteConfig struct {
 	currParent int
 
@@ -456,7 +461,7 @@ func (fx *DatasetServiceAnnotationSpecTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetAnnotationSpecRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetAnnotationSpec(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -506,6 +511,11 @@ func (fx *DatasetServiceAnnotationSpecTestSuiteConfig) create(t *testing.T, pare
 	created, err := fx.CreateResource(fx.Context(), parent)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *DatasetServiceAnnotationSpecTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type DatasetServiceDataItemTestSuiteConfig struct {
@@ -703,6 +713,11 @@ func (fx *DatasetServiceDataItemTestSuiteConfig) create(t *testing.T, parent str
 	return created
 }
 
+func (fx *DatasetServiceDataItemTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
+}
+
 type DatasetServiceDatasetTestSuiteConfig struct {
 	currParent int
 
@@ -870,7 +885,7 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetDatasetRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetDataset(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -982,7 +997,7 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) testUpdate(t *testing.T) {
 		t.Run("not found", func(t *testing.T) {
 			fx.maybeSkip(t)
 			msg := fx.Update(parent)
-			msg.SetName(created.GetName() + "notfound")
+			msg.SetName(fx.notFoundName(created.GetName()))
 			req := &UpdateDatasetRequest{}
 			req.SetDataset(msg)
 			_, err := fx.Service().UpdateDataset(fx.Context(), req)
@@ -1288,7 +1303,7 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteDatasetRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteDataset(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1350,6 +1365,11 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) create(t *testing.T, parent stri
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *DatasetServiceDatasetTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type DatasetServiceDatasetVersionTestSuiteConfig struct {
@@ -1445,7 +1465,7 @@ func (fx *DatasetServiceDatasetVersionTestSuiteConfig) testGet(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &GetDatasetVersionRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().GetDatasetVersion(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1661,7 +1681,7 @@ func (fx *DatasetServiceDatasetVersionTestSuiteConfig) testDelete(t *testing.T) 
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteDatasetVersionRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteDatasetVersion(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -1723,6 +1743,11 @@ func (fx *DatasetServiceDatasetVersionTestSuiteConfig) create(t *testing.T, pare
 	t.Helper()
 	t.Skip("Long running create method not supported")
 	return nil
+}
+
+func (fx *DatasetServiceDatasetVersionTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }
 
 type DatasetServiceSavedQueryTestSuiteConfig struct {
@@ -1957,7 +1982,7 @@ func (fx *DatasetServiceSavedQueryTestSuiteConfig) testDelete(t *testing.T) {
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
 		req := &DeleteSavedQueryRequest{}
-		req.SetName(created.GetName() + "notfound")
+		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteSavedQuery(fx.Context(), req)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -2023,4 +2048,9 @@ func (fx *DatasetServiceSavedQueryTestSuiteConfig) create(t *testing.T, parent s
 	created, err := fx.CreateResource(fx.Context(), parent)
 	assert.NilError(t, err)
 	return created
+}
+
+func (fx *DatasetServiceSavedQueryTestSuiteConfig) notFoundName(name string) string {
+	// appending to the resource name ensures it is valid
+	return name + "notfound"
 }

@@ -15,6 +15,7 @@ var Suite = suite.Suite{
 		createTime,
 		persisted,
 		userSettableID,
+		systemGeneratedID,
 		invalidUserSettableID,
 		alreadyExists,
 		requiredFields,

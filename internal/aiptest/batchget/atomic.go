@@ -30,8 +30,7 @@ var atomic = suite.Test{
 			Parent:   "parent",
 			Names: []string{
 				util.FieldGet("created00", "Name", apiMode),
-				// appending to the resource name ensures it is valid
-				util.FieldGet("created01", "Name", apiMode) + " + \"notfound\"",
+				ident.FixtureNotFoundName + "(" + util.FieldGet("created01", "Name", apiMode) + ")",
 				util.FieldGet("created02", "Name", apiMode),
 			},
 		}.Generate(f, "req", "_", "err", ":=", apiMode)
