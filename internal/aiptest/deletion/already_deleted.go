@@ -42,7 +42,7 @@ var alreadyDeleted = suite.Test{
 			ResourceVar: "deleted",
 			Name:        util.FieldGet("created", "Name", apiMode),
 		}.Generate(f, "req2", "_", "err", "=", apiMode)
-		f.P(ident.AssertEqual, "(t, ", ident.Codes(codes.NotFound), ",", ident.StatusCode, "(err), err)")
+		ident.AssertCode(f, scope.Runtime, codes.NotFound)
 		return nil
 	},
 }

@@ -31,7 +31,7 @@ var negativePageSize = suite.Test{
 			Parent:   "parent",
 			PageSize: "-10",
 		}.Generate(f, "req", "_", "err", ":=", apiMode)
-		f.P(ident.AssertEqual, "(t, ", ident.Codes(codes.InvalidArgument), ", ", ident.StatusCode, "(err), err)")
+		ident.AssertCode(f, scope.Runtime, codes.InvalidArgument)
 		return nil
 	},
 }

@@ -1,0 +1,25 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    # The suites for Connect import the messages from a sibling package, so their
+    # import path must match where they are generated.
+    default: github.com/einride/protoc-gen-go-aip-test/proto/gen/connect
+    except:
+      - buf.build/googleapis/googleapis
+plugins:
+  - name: go
+    out: gen/connect
+    opt:
+      - module=github.com/einride/protoc-gen-go-aip-test/proto/gen/connect
+      - default_api_level=API_OPEN
+
+  - name: connect-go
+    out: gen/connect
+    opt: module=github.com/einride/protoc-gen-go-aip-test/proto/gen/connect
+
+  - name: go-aip-test
+    out: gen/connect
+    opt:
+      - module=github.com/einride/protoc-gen-go-aip-test/proto/gen/connect
+      - runtime=connect

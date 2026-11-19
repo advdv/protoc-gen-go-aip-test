@@ -78,6 +78,34 @@ This can also be done via a
 [buf generate](https://docs.buf.build/generate/usage) template. See
 [buf.gen.yaml](./proto/buf.gen.yaml) for an example.
 
+#### Connect Support
+
+By default, the generated test suites call a gRPC `<Service>Server` and check
+errors with gRPC status codes. To test a [Connect](https://connectrpc.com)
+service instead, set the `runtime=connect` option:
+
+```bash
+protoc
+  --go-aip-test_out=[OUTPUT DIR] \
+  --go-aip-test_opt=module=[OUTPUT MODULE],runtime=connect \
+  [.proto files ...]
+```
+
+Available values for the `runtime` option:
+
+- `runtime=grpc` (default) - Test a gRPC `<Service>Server` and check errors with
+  `google.golang.org/grpc/status`
+- `runtime=connect` - Test any value with the service's standard methods in the
+  simple form of [Connect v2](https://pkg.go.dev/connectrpc.com/connect/v2),
+  such as its Connect client or handler, and check errors with `connect.CodeOf`
+
+With `runtime=connect`, the suites are generated into a sibling
+`<package>aiptest` package, the way `protoc-gen-connect-go` generates
+`<package>connect`, and each service gets an interface with its standard
+methods, such as `FreightService`. See
+[buf.connect.gen.yaml](./proto/buf.connect.gen.yaml) and
+[example/connect](./example/connect) for an example.
+
 ### Step 4: Run tests
 
 There are two alternative ways of bootstrapping the tests.

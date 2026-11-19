@@ -3,8 +3,11 @@ package plugin
 import (
 	"strconv"
 
+	"github.com/einride/protoc-gen-go-aip-test/internal/aip/method"
+	"github.com/einride/protoc-gen-go-aip-test/internal/util"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 type serviceGenerator struct {
@@ -15,6 +18,7 @@ type serviceGenerator struct {
 }
 
 func (s *serviceGenerator) Generate(f *protogen.GeneratedFile) error {
+	s.generateServiceInterface(f)
 	s.generateConfigProvider(f)
 	s.generateMainTestFunction(f)
 	s.generateTestFunctions(f)
@@ -109,10 +113,7 @@ func (s *serviceGenerator) generateFixture(f *protogen.GeneratedFile) {
 		GoImportPath: "testing",
 	})
 
-	service := f.QualifiedGoIdent(protogen.GoIdent{
-		GoName:       s.service.GoName + "Server",
-		GoImportPath: s.service.Methods[0].Input.GoIdent.GoImportPath,
-	})
+	service := serviceType(f, s.service, s.config)
 
 	f.P("type ", serviceTestSuiteName(s.service.Desc), " struct {")
 	f.P("T *", testingT)
@@ -133,10 +134,7 @@ func (s *serviceGenerator) generateTestMethods(f *protogen.GeneratedFile) {
 		GoName:       "T",
 		GoImportPath: "testing",
 	})
-	service := f.QualifiedGoIdent(protogen.GoIdent{
-		GoName:       s.service.GoName + "Server",
-		GoImportPath: s.service.Methods[0].Input.GoIdent.GoImportPath,
-	})
+	service := serviceType(f, s.service, s.config)
 	serviceFx := serviceTestSuiteName(s.service.Desc)
 	for _, resource := range s.resources {
 		resourceFx := resourceTestSuiteConfigName(s.service.Desc, resource)
@@ -149,4 +147,49 @@ func (s *serviceGenerator) generateTestMethods(f *protogen.GeneratedFile) {
 		f.P("}")
 		f.P()
 	}
+}
+
+// serviceType returns the type the test suites call the service through: the gRPC server
+// interface in the proto's Go package, or for Connect the interface generateServiceInterface writes.
+func serviceType(f *protogen.GeneratedFile, service *protogen.Service, config Config) string {
+	if util.Runtime(config.Runtime) == util.RuntimeConnect {
+		return service.GoName
+	}
+	return f.QualifiedGoIdent(protogen.GoIdent{
+		GoName:       service.GoName + "Server",
+		GoImportPath: service.Methods[0].Input.GoIdent.GoImportPath,
+	})
+}
+
+// generateServiceInterface writes, for Connect, an interface with the service's standard
+// methods in Connect v2's simple form, which both its generated client and handler implement.
+func (s *serviceGenerator) generateServiceInterface(f *protogen.GeneratedFile) {
+	if util.Runtime(s.config.Runtime) != util.RuntimeConnect {
+		return
+	}
+	context := f.QualifiedGoIdent(protogen.GoIdent{
+		GoName:       "Context",
+		GoImportPath: "context",
+	})
+	standard := make(map[protoreflect.FullName]bool)
+	for _, m := range method.NewMethods(s.service.Desc) {
+		standard[m.Descriptor.FullName()] = true
+	}
+	f.P(
+		"// ",
+		s.service.GoName,
+		" is the part of ",
+		s.service.Desc.FullName(),
+		" the tests call: its standard methods.",
+	)
+	f.P("// Both its Connect client and its Connect handler implement it.")
+	f.P("type ", s.service.GoName, " interface {")
+	for _, m := range s.service.Methods {
+		if !standard[m.Desc.FullName()] {
+			continue
+		}
+		f.P(m.GoName, "(", context, ", *", m.Input.GoIdent, ") (*", m.Output.GoIdent, ", error)")
+	}
+	f.P("}")
+	f.P()
 }

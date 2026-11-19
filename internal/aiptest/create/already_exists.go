@@ -39,7 +39,7 @@ var alreadyExists = suite.Test{
 		m.Generate(f, "req1", "_", "err", ":=", apiMode)
 		f.P(ident.AssertNilError, "(t, err)")
 		m.Generate(f, "req2", "_", "err", "=", apiMode)
-		f.P(ident.AssertEqual, "(t, ", ident.Codes(codes.AlreadyExists), ",", ident.StatusCode, "(err), err)")
+		ident.AssertCode(f, scope.Runtime, codes.AlreadyExists)
 		return nil
 	},
 }

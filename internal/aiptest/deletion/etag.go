@@ -35,7 +35,7 @@ var etagMismatch = suite.Test{
 			ResourceVar: "created",
 			Etag:        util.EtagLiteral("99999"),
 		}.Generate(f, "req", "_", "err", ":=", apiMode)
-		f.P(ident.AssertEqual, "(t, ", ident.Codes(codes.Aborted), ",", ident.StatusCode, "(err), err)")
+		ident.AssertCode(f, scope.Runtime, codes.Aborted)
 		return nil
 	},
 }

@@ -35,7 +35,7 @@ var atomic = suite.Test{
 				util.FieldGet("created02", "Name", apiMode),
 			},
 		}.Generate(f, "req", "_", "err", ":=", apiMode)
-		f.P(ident.AssertEqual, "(t, ", ident.Codes(codes.NotFound), ", ", ident.StatusCode, "(err), err)")
+		ident.AssertCode(f, scope.Runtime, codes.NotFound)
 		return nil
 	},
 }

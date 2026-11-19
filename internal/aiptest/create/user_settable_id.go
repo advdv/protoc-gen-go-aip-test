@@ -115,7 +115,7 @@ var invalidUserSettableID = suite.Test{
 			Parent:         "parent",
 			UserSettableID: "tt.id",
 		}.Generate(f, "req", "_", "err", ":=", apiMode)
-		f.P(ident.AssertEqual, "(t, ", ident.Codes(codes.InvalidArgument), ", ", ident.StatusCode, "(err), err)")
+		ident.AssertCode(f, scope.Runtime, codes.InvalidArgument)
 		f.P("})")
 		f.P("}")
 		return nil

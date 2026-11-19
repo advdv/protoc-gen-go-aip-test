@@ -36,10 +36,7 @@ func (r *resourceGenerator) generateFixture(f *protogen.GeneratedFile) {
 		GoName:       "Context",
 		GoImportPath: "context",
 	})
-	service := f.QualifiedGoIdent(protogen.GoIdent{
-		GoName:       r.service.GoName + "Server",
-		GoImportPath: r.service.Methods[0].Input.GoIdent.GoImportPath,
-	})
+	service := serviceType(f, r.service, r.config)
 
 	f.P("type ", resourceTestSuiteConfigName(r.service.Desc, r.resource), " struct {")
 	f.P("currParent int")
@@ -117,6 +114,7 @@ func (r *resourceGenerator) generateTestMethod(f *protogen.GeneratedFile) {
 		Service:  r.service,
 		Resource: r.resource,
 		Message:  r.message,
+		Runtime:  util.Runtime(r.config.Runtime),
 	}
 	for _, s := range aiptest.Suites {
 		if s.Enabled(scope) {
@@ -136,6 +134,7 @@ func (r *resourceGenerator) generateTestCases(f *protogen.GeneratedFile) error {
 		Service:  r.service,
 		Resource: r.resource,
 		Message:  r.message,
+		Runtime:  util.Runtime(r.config.Runtime),
 	}
 	for _, s := range aiptest.Suites {
 		if !s.Enabled(scope) {

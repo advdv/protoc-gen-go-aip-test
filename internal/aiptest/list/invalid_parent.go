@@ -30,7 +30,7 @@ var invalidParent = suite.Test{
 			Method:   listMethod,
 			Parent:   strconv.Quote("invalid resource name"),
 		}.Generate(f, "req", "_", "err", ":=", apiMode)
-		f.P(ident.AssertEqual, "(t, ", ident.Codes(codes.InvalidArgument), ", ", ident.StatusCode, "(err), err)")
+		ident.AssertCode(f, scope.Runtime, codes.InvalidArgument)
 		return nil
 	},
 }

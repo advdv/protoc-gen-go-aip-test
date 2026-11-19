@@ -34,7 +34,7 @@ var wildcardName = suite.Test{
 			Parent:   "parent",
 			Names:    []string{strconv.Quote(util.WildcardResourceName(scope.Resource))},
 		}.Generate(f, "req", "_", "err", ":=", apiMode)
-		f.P(ident.AssertEqual, "(t, ", ident.Codes(codes.InvalidArgument), ", ", ident.StatusCode, "(err), err)")
+		ident.AssertCode(f, scope.Runtime, codes.InvalidArgument)
 		return nil
 	},
 }

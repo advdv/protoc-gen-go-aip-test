@@ -62,7 +62,7 @@ var requiredFields = suite.Test{
 				Msg:        "msg",
 				UpdateMask: []string{strconv.Quote("*")},
 			}.Generate(f, "req", "_", "err", ":=", apiMode)
-			f.P(ident.AssertEqual, "(t, ", ident.Codes(codes.InvalidArgument), ", ", ident.StatusCode, "(err), err)")
+			ident.AssertCode(f, scope.Runtime, codes.InvalidArgument)
 			f.P("})")
 		})
 		return nil

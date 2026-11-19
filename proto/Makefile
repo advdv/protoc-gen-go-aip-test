@@ -55,6 +55,10 @@ all: $(sagefile)
 buf-format: $(sagefile)
 	@$(sagefile) Proto:BufFormat
 
+.PHONY: buf-generate-connect
+buf-generate-connect: $(sagefile)
+	@$(sagefile) Proto:BufGenerateConnect
+
 .PHONY: buf-generate-googleapis-opaque
 buf-generate-googleapis-opaque: $(sagefile)
 	@$(sagefile) Proto:BufGenerateGoogleapisOpaque
@@ -74,6 +78,10 @@ buf-generate-open-struct: $(sagefile)
 .PHONY: buf-lint
 buf-lint: $(sagefile)
 	@$(sagefile) Proto:BufLint
+
+.PHONY: protoc-gen-connect-go
+protoc-gen-connect-go: $(sagefile)
+	@$(sagefile) Proto:ProtocGenConnectGo
 
 .PHONY: protoc-gen-go
 protoc-gen-go: $(sagefile)

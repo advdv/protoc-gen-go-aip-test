@@ -30,7 +30,7 @@ var invalidUpdateMask = suite.Test{
 			Msg:        "created",
 			UpdateMask: []string{strconv.Quote("invalid_field_xyz")},
 		}.Generate(f, "req", "_", "err", ":=", apiMode)
-		f.P(ident.AssertEqual, "(t, ", ident.Codes(codes.InvalidArgument), ",", ident.StatusCode, "(err), err)")
+		ident.AssertCode(f, scope.Runtime, codes.InvalidArgument)
 		return nil
 	},
 }

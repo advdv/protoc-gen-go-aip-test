@@ -31,7 +31,7 @@ var parentMismatch = suite.Test{
 			Parent:   "fx.peekNextParent(t)",
 			Names:    []string{util.FieldGet("created00", "Name", apiMode)},
 		}.Generate(f, "req", "_", "err", ":=", apiMode)
-		f.P(ident.AssertEqual, "(t, ", ident.Codes(codes.InvalidArgument), ",", ident.StatusCode, "(err), err)")
+		ident.AssertCode(f, scope.Runtime, codes.InvalidArgument)
 		return nil
 	},
 }

@@ -25,6 +25,7 @@ func (Proto) All(ctx context.Context) error {
 		ctx,
 		Proto.BufGenerateOpenStruct,
 		Proto.BufGenerateOpaque,
+		Proto.BufGenerateConnect,
 		Proto.BufGenerateGoogleapisOpenStruct,
 		Proto.BufGenerateGoogleapisOpaque,
 	)
@@ -62,6 +63,12 @@ func (Proto) ProtocGenGoGRPC(ctx context.Context) error {
 	return err
 }
 
+func (Proto) ProtocGenConnectGo(ctx context.Context) error {
+	sg.Logger(ctx).Println("installing...")
+	_, err := sgtool.GoInstallWithModfile(ctx, "connectrpc.com/connect/v2/cmd/protoc-gen-connect-go", "go.mod")
+	return err
+}
+
 func (Proto) ProtocGenGoAIPTest(ctx context.Context) error {
 	sg.Logger(ctx).Println("building binary...")
 	return sg.Command(ctx, "go", "build", "-o", sg.FromBinDir("protoc-gen-go-aip-test"), ".").Run()
@@ -79,6 +86,14 @@ func (Proto) BufGenerateOpaque(ctx context.Context) error {
 	sg.Deps(ctx, Proto.ProtocGenGo, Proto.ProtocGenGoGRPC, Proto.ProtocGenGoAIPTest)
 	sg.Logger(ctx).Println("generating proto stubs...")
 	cmd := sgbuf.Command(ctx, "generate", "--template", "buf.opaque.gen.yaml", "--path", "einride")
+	cmd.Dir = sg.FromGitRoot("proto")
+	return cmd.Run()
+}
+
+func (Proto) BufGenerateConnect(ctx context.Context) error {
+	sg.Deps(ctx, Proto.ProtocGenGo, Proto.ProtocGenConnectGo, Proto.ProtocGenGoAIPTest)
+	sg.Logger(ctx).Println("generating proto stubs...")
+	cmd := sgbuf.Command(ctx, "generate", "--template", "buf.connect.gen.yaml", "--path", "einride")
 	cmd.Dir = sg.FromGitRoot("proto")
 	return cmd.Run()
 }

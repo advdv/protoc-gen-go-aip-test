@@ -36,7 +36,7 @@ var notFound = suite.Test{
 			// appending to the resource name ensures it is valid
 			Name: util.FieldGet("created", "Name", apiMode) + " + \"notfound\"",
 		}.Generate(f, "req", "_", "err", ":=", apiMode)
-		f.P(ident.AssertEqual, "(t, ", ident.Codes(codes.NotFound), ",", ident.StatusCode, "(err), err)")
+		ident.AssertCode(f, scope.Runtime, codes.NotFound)
 		return nil
 	},
 }

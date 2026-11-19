@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/iam v1.15.1
 	cloud.google.com/go/longrunning v1.3.0
 	cloud.google.com/go/spanner v1.96.1
+	connectrpc.com/connect/v2 v2.0.2
 	github.com/google/go-cmp v0.7.0
 	github.com/stoewer/go-strcase v1.3.1
 	go.einride.tech/aip v0.86.3

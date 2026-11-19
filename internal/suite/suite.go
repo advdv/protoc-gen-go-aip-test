@@ -10,6 +10,7 @@ type Scope struct {
 	Service  *protogen.Service
 	Resource *annotations.ResourceDescriptor
 	Message  *protogen.Message
+	Runtime  util.Runtime
 }
 
 // Suite contains a suite of tests for a method.
