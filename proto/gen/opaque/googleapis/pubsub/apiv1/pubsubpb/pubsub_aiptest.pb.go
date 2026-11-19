@@ -69,6 +69,10 @@ type PublisherTopicTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a Topic and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -317,6 +321,23 @@ func (fx *PublisherTopicTestSuiteConfig) normalizeAll(msgs []*Topic) []*Topic {
 	return normalized
 }
 
+func (fx *PublisherTopicTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Topic) []*Topic {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*Topic, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *PublisherTopicTestSuiteConfig) create(t *testing.T, parent string) *Topic {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -415,6 +436,10 @@ type SubscriberSnapshotTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a Snapshot and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -543,6 +568,23 @@ func (fx *SubscriberSnapshotTestSuiteConfig) normalizeAll(msgs []*Snapshot) []*S
 	return normalized
 }
 
+func (fx *SubscriberSnapshotTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Snapshot) []*Snapshot {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*Snapshot, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *SubscriberSnapshotTestSuiteConfig) create(t *testing.T, parent string) *Snapshot {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -572,6 +614,10 @@ type SubscriberSubscriptionTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a Subscription and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -761,6 +807,23 @@ func (fx *SubscriberSubscriptionTestSuiteConfig) normalizeAll(msgs []*Subscripti
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *SubscriberSubscriptionTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Subscription) []*Subscription {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*Subscription, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *SubscriberSubscriptionTestSuiteConfig) create(t *testing.T, parent string) *Subscription {

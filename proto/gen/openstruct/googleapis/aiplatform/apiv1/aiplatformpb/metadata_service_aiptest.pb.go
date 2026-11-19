@@ -180,6 +180,10 @@ type MetadataServiceArtifactTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Artifact
@@ -495,7 +499,7 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.Artifacts),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.Artifacts)),
 				cmpopts.SortSlices(func(a, b *Artifact) bool {
 					return a.Name < b.Name
 				}),
@@ -508,7 +512,7 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListArtifacts(fx.Context(), &ListArtifactsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -547,7 +551,7 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Artifact) bool {
 					return a.Name < b.Name
 				}),
@@ -594,7 +598,7 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.Artifacts),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.Artifacts)),
 				cmpopts.SortSlices(func(a, b *Artifact) bool {
 					return a.Name < b.Name
 				}),
@@ -732,6 +736,23 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) normalizeAll(msgs []*Artifact)
 	return normalized
 }
 
+func (fx *MetadataServiceArtifactTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Artifact) []*Artifact {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*Artifact, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *MetadataServiceArtifactTestSuiteConfig) create(t *testing.T, parent string) *Artifact {
 	t.Helper()
 	created, err := fx.Service().CreateArtifact(fx.Context(), &CreateArtifactRequest{
@@ -761,6 +782,10 @@ type MetadataServiceContextTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Context
@@ -1076,7 +1101,7 @@ func (fx *MetadataServiceContextTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.Contexts),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.Contexts)),
 				cmpopts.SortSlices(func(a, b *Context) bool {
 					return a.Name < b.Name
 				}),
@@ -1089,7 +1114,7 @@ func (fx *MetadataServiceContextTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListContexts(fx.Context(), &ListContextsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -1128,7 +1153,7 @@ func (fx *MetadataServiceContextTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Context) bool {
 					return a.Name < b.Name
 				}),
@@ -1175,7 +1200,7 @@ func (fx *MetadataServiceContextTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.Contexts),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.Contexts)),
 				cmpopts.SortSlices(func(a, b *Context) bool {
 					return a.Name < b.Name
 				}),
@@ -1313,6 +1338,23 @@ func (fx *MetadataServiceContextTestSuiteConfig) normalizeAll(msgs []*Context) [
 	return normalized
 }
 
+func (fx *MetadataServiceContextTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Context) []*Context {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*Context, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *MetadataServiceContextTestSuiteConfig) create(t *testing.T, parent string) *Context {
 	t.Helper()
 	created, err := fx.Service().CreateContext(fx.Context(), &CreateContextRequest{
@@ -1342,6 +1384,10 @@ type MetadataServiceExecutionTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Execution
@@ -1657,7 +1703,7 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.Executions),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.Executions)),
 				cmpopts.SortSlices(func(a, b *Execution) bool {
 					return a.Name < b.Name
 				}),
@@ -1670,7 +1716,7 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListExecutions(fx.Context(), &ListExecutionsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -1709,7 +1755,7 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Execution) bool {
 					return a.Name < b.Name
 				}),
@@ -1756,7 +1802,7 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.Executions),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.Executions)),
 				cmpopts.SortSlices(func(a, b *Execution) bool {
 					return a.Name < b.Name
 				}),
@@ -1894,6 +1940,23 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) normalizeAll(msgs []*Executio
 	return normalized
 }
 
+func (fx *MetadataServiceExecutionTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Execution) []*Execution {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*Execution, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *MetadataServiceExecutionTestSuiteConfig) create(t *testing.T, parent string) *Execution {
 	t.Helper()
 	created, err := fx.Service().CreateExecution(fx.Context(), &CreateExecutionRequest{
@@ -1923,6 +1986,10 @@ type MetadataServiceMetadataSchemaTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *MetadataSchema
@@ -2129,7 +2196,7 @@ func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.MetadataSchemas),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.MetadataSchemas)),
 				cmpopts.SortSlices(func(a, b *MetadataSchema) bool {
 					return a.Name < b.Name
 				}),
@@ -2142,7 +2209,7 @@ func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListMetadataSchemas(fx.Context(), &ListMetadataSchemasRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -2181,7 +2248,7 @@ func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *MetadataSchema) bool {
 					return a.Name < b.Name
 				}),
@@ -2250,6 +2317,23 @@ func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) normalizeAll(msgs []*Met
 	return normalized
 }
 
+func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) listed(t *testing.T, parent string, want, got []*MetadataSchema) []*MetadataSchema {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*MetadataSchema, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) create(t *testing.T, parent string) *MetadataSchema {
 	t.Helper()
 	created, err := fx.Service().CreateMetadataSchema(fx.Context(), &CreateMetadataSchemaRequest{
@@ -2279,6 +2363,10 @@ type MetadataServiceMetadataStoreTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *MetadataStore
@@ -2454,7 +2542,7 @@ func (fx *MetadataServiceMetadataStoreTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.MetadataStores),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.MetadataStores)),
 				cmpopts.SortSlices(func(a, b *MetadataStore) bool {
 					return a.Name < b.Name
 				}),
@@ -2467,7 +2555,7 @@ func (fx *MetadataServiceMetadataStoreTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListMetadataStores(fx.Context(), &ListMetadataStoresRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -2506,7 +2594,7 @@ func (fx *MetadataServiceMetadataStoreTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *MetadataStore) bool {
 					return a.Name < b.Name
 				}),
@@ -2553,7 +2641,7 @@ func (fx *MetadataServiceMetadataStoreTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.MetadataStores),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.MetadataStores)),
 				cmpopts.SortSlices(func(a, b *MetadataStore) bool {
 					return a.Name < b.Name
 				}),
@@ -2677,6 +2765,23 @@ func (fx *MetadataServiceMetadataStoreTestSuiteConfig) normalizeAll(msgs []*Meta
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *MetadataServiceMetadataStoreTestSuiteConfig) listed(t *testing.T, parent string, want, got []*MetadataStore) []*MetadataStore {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*MetadataStore, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *MetadataServiceMetadataStoreTestSuiteConfig) create(t *testing.T, parent string) *MetadataStore {

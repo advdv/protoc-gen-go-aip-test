@@ -234,6 +234,10 @@ type JobServiceBatchPredictionJobTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *BatchPredictionJob
@@ -734,7 +738,7 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.GetBatchPredictionJobs()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.GetBatchPredictionJobs())),
 				cmpopts.SortSlices(func(a, b *BatchPredictionJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -747,7 +751,7 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			req := &ListBatchPredictionJobsRequest{}
 			req.SetParent(parent)
-			req.SetPageSize(resourcesCount)
+			req.SetPageSize(int32(resourcesCount + fx.Preexisting))
 			response, err := fx.Service().ListBatchPredictionJobs(fx.Context(), req)
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.GetNextPageToken())
@@ -786,7 +790,7 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *BatchPredictionJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -833,7 +837,7 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.GetBatchPredictionJobs()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.GetBatchPredictionJobs())),
 				cmpopts.SortSlices(func(a, b *BatchPredictionJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -959,6 +963,23 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) normalizeAll(msgs []*Batc
 	return normalized
 }
 
+func (fx *JobServiceBatchPredictionJobTestSuiteConfig) listed(t *testing.T, parent string, want, got []*BatchPredictionJob) []*BatchPredictionJob {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*BatchPredictionJob, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *JobServiceBatchPredictionJobTestSuiteConfig) create(t *testing.T, parent string) *BatchPredictionJob {
 	t.Helper()
 	req := &CreateBatchPredictionJobRequest{}
@@ -988,6 +1009,10 @@ type JobServiceCustomJobTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *CustomJob
@@ -1340,7 +1365,7 @@ func (fx *JobServiceCustomJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.GetCustomJobs()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.GetCustomJobs())),
 				cmpopts.SortSlices(func(a, b *CustomJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1353,7 +1378,7 @@ func (fx *JobServiceCustomJobTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			req := &ListCustomJobsRequest{}
 			req.SetParent(parent)
-			req.SetPageSize(resourcesCount)
+			req.SetPageSize(int32(resourcesCount + fx.Preexisting))
 			response, err := fx.Service().ListCustomJobs(fx.Context(), req)
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.GetNextPageToken())
@@ -1392,7 +1417,7 @@ func (fx *JobServiceCustomJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *CustomJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1439,7 +1464,7 @@ func (fx *JobServiceCustomJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.GetCustomJobs()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.GetCustomJobs())),
 				cmpopts.SortSlices(func(a, b *CustomJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1565,6 +1590,23 @@ func (fx *JobServiceCustomJobTestSuiteConfig) normalizeAll(msgs []*CustomJob) []
 	return normalized
 }
 
+func (fx *JobServiceCustomJobTestSuiteConfig) listed(t *testing.T, parent string, want, got []*CustomJob) []*CustomJob {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*CustomJob, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *JobServiceCustomJobTestSuiteConfig) create(t *testing.T, parent string) *CustomJob {
 	t.Helper()
 	req := &CreateCustomJobRequest{}
@@ -1594,6 +1636,10 @@ type JobServiceDataLabelingJobTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *DataLabelingJob
@@ -1918,7 +1964,7 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.GetDataLabelingJobs()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.GetDataLabelingJobs())),
 				cmpopts.SortSlices(func(a, b *DataLabelingJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1931,7 +1977,7 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			req := &ListDataLabelingJobsRequest{}
 			req.SetParent(parent)
-			req.SetPageSize(resourcesCount)
+			req.SetPageSize(int32(resourcesCount + fx.Preexisting))
 			response, err := fx.Service().ListDataLabelingJobs(fx.Context(), req)
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.GetNextPageToken())
@@ -1970,7 +2016,7 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *DataLabelingJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -2017,7 +2063,7 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.GetDataLabelingJobs()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.GetDataLabelingJobs())),
 				cmpopts.SortSlices(func(a, b *DataLabelingJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -2143,6 +2189,23 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) normalizeAll(msgs []*DataLab
 	return normalized
 }
 
+func (fx *JobServiceDataLabelingJobTestSuiteConfig) listed(t *testing.T, parent string, want, got []*DataLabelingJob) []*DataLabelingJob {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*DataLabelingJob, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *JobServiceDataLabelingJobTestSuiteConfig) create(t *testing.T, parent string) *DataLabelingJob {
 	t.Helper()
 	req := &CreateDataLabelingJobRequest{}
@@ -2172,6 +2235,10 @@ type JobServiceHyperparameterTuningJobTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *HyperparameterTuningJob
@@ -2604,7 +2671,7 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) testList(t *testing.
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.GetHyperparameterTuningJobs()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.GetHyperparameterTuningJobs())),
 				cmpopts.SortSlices(func(a, b *HyperparameterTuningJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -2617,7 +2684,7 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) testList(t *testing.
 			fx.maybeSkip(t)
 			req := &ListHyperparameterTuningJobsRequest{}
 			req.SetParent(parent)
-			req.SetPageSize(resourcesCount)
+			req.SetPageSize(int32(resourcesCount + fx.Preexisting))
 			response, err := fx.Service().ListHyperparameterTuningJobs(fx.Context(), req)
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.GetNextPageToken())
@@ -2656,7 +2723,7 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) testList(t *testing.
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *HyperparameterTuningJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -2703,7 +2770,7 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) testList(t *testing.
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.GetHyperparameterTuningJobs()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.GetHyperparameterTuningJobs())),
 				cmpopts.SortSlices(func(a, b *HyperparameterTuningJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -2829,6 +2896,23 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) normalizeAll(msgs []
 	return normalized
 }
 
+func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) listed(t *testing.T, parent string, want, got []*HyperparameterTuningJob) []*HyperparameterTuningJob {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*HyperparameterTuningJob, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) create(t *testing.T, parent string) *HyperparameterTuningJob {
 	t.Helper()
 	req := &CreateHyperparameterTuningJobRequest{}
@@ -2858,6 +2942,10 @@ type JobServiceModelDeploymentMonitoringJobTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *ModelDeploymentMonitoringJob
@@ -3432,7 +3520,7 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testList(t *tes
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.GetModelDeploymentMonitoringJobs()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.GetModelDeploymentMonitoringJobs())),
 				cmpopts.SortSlices(func(a, b *ModelDeploymentMonitoringJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -3445,7 +3533,7 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testList(t *tes
 			fx.maybeSkip(t)
 			req := &ListModelDeploymentMonitoringJobsRequest{}
 			req.SetParent(parent)
-			req.SetPageSize(resourcesCount)
+			req.SetPageSize(int32(resourcesCount + fx.Preexisting))
 			response, err := fx.Service().ListModelDeploymentMonitoringJobs(fx.Context(), req)
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.GetNextPageToken())
@@ -3484,7 +3572,7 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testList(t *tes
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *ModelDeploymentMonitoringJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -3531,7 +3619,7 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testList(t *tes
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.GetModelDeploymentMonitoringJobs()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.GetModelDeploymentMonitoringJobs())),
 				cmpopts.SortSlices(func(a, b *ModelDeploymentMonitoringJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -3657,6 +3745,23 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) normalizeAll(ms
 	return normalized
 }
 
+func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) listed(t *testing.T, parent string, want, got []*ModelDeploymentMonitoringJob) []*ModelDeploymentMonitoringJob {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*ModelDeploymentMonitoringJob, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) create(t *testing.T, parent string) *ModelDeploymentMonitoringJob {
 	t.Helper()
 	req := &CreateModelDeploymentMonitoringJobRequest{}
@@ -3686,6 +3791,10 @@ type JobServiceNasJobTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *NasJob
@@ -4182,7 +4291,7 @@ func (fx *JobServiceNasJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.GetNasJobs()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.GetNasJobs())),
 				cmpopts.SortSlices(func(a, b *NasJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -4195,7 +4304,7 @@ func (fx *JobServiceNasJobTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			req := &ListNasJobsRequest{}
 			req.SetParent(parent)
-			req.SetPageSize(resourcesCount)
+			req.SetPageSize(int32(resourcesCount + fx.Preexisting))
 			response, err := fx.Service().ListNasJobs(fx.Context(), req)
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.GetNextPageToken())
@@ -4234,7 +4343,7 @@ func (fx *JobServiceNasJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *NasJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -4281,7 +4390,7 @@ func (fx *JobServiceNasJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.GetNasJobs()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.GetNasJobs())),
 				cmpopts.SortSlices(func(a, b *NasJob) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -4407,6 +4516,23 @@ func (fx *JobServiceNasJobTestSuiteConfig) normalizeAll(msgs []*NasJob) []*NasJo
 	return normalized
 }
 
+func (fx *JobServiceNasJobTestSuiteConfig) listed(t *testing.T, parent string, want, got []*NasJob) []*NasJob {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*NasJob, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *JobServiceNasJobTestSuiteConfig) create(t *testing.T, parent string) *NasJob {
 	t.Helper()
 	req := &CreateNasJobRequest{}
@@ -4436,6 +4562,10 @@ type JobServiceNasTrialDetailTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a NasTrialDetail and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -4566,7 +4696,7 @@ func (fx *JobServiceNasTrialDetailTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.GetNasTrialDetails()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.GetNasTrialDetails())),
 				cmpopts.SortSlices(func(a, b *NasTrialDetail) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -4579,7 +4709,7 @@ func (fx *JobServiceNasTrialDetailTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			req := &ListNasTrialDetailsRequest{}
 			req.SetParent(parent)
-			req.SetPageSize(resourcesCount)
+			req.SetPageSize(int32(resourcesCount + fx.Preexisting))
 			response, err := fx.Service().ListNasTrialDetails(fx.Context(), req)
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.GetNextPageToken())
@@ -4618,7 +4748,7 @@ func (fx *JobServiceNasTrialDetailTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *NasTrialDetail) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -4685,6 +4815,23 @@ func (fx *JobServiceNasTrialDetailTestSuiteConfig) normalizeAll(msgs []*NasTrial
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *JobServiceNasTrialDetailTestSuiteConfig) listed(t *testing.T, parent string, want, got []*NasTrialDetail) []*NasTrialDetail {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*NasTrialDetail, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *JobServiceNasTrialDetailTestSuiteConfig) create(t *testing.T, parent string) *NasTrialDetail {

@@ -125,6 +125,10 @@ type ModelServiceModelTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a Model and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -557,7 +561,7 @@ func (fx *ModelServiceModelTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.Models),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.Models)),
 				cmpopts.SortSlices(func(a, b *Model) bool {
 					return a.Name < b.Name
 				}),
@@ -570,7 +574,7 @@ func (fx *ModelServiceModelTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListModels(fx.Context(), &ListModelsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -609,7 +613,7 @@ func (fx *ModelServiceModelTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Model) bool {
 					return a.Name < b.Name
 				}),
@@ -656,7 +660,7 @@ func (fx *ModelServiceModelTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.Models),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.Models)),
 				cmpopts.SortSlices(func(a, b *Model) bool {
 					return a.Name < b.Name
 				}),
@@ -782,6 +786,23 @@ func (fx *ModelServiceModelTestSuiteConfig) normalizeAll(msgs []*Model) []*Model
 	return normalized
 }
 
+func (fx *ModelServiceModelTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Model) []*Model {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*Model, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *ModelServiceModelTestSuiteConfig) create(t *testing.T, parent string) *Model {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -811,6 +832,10 @@ type ModelServiceModelEvaluationTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a ModelEvaluation and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -941,7 +966,7 @@ func (fx *ModelServiceModelEvaluationTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.ModelEvaluations),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.ModelEvaluations)),
 				cmpopts.SortSlices(func(a, b *ModelEvaluation) bool {
 					return a.Name < b.Name
 				}),
@@ -954,7 +979,7 @@ func (fx *ModelServiceModelEvaluationTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListModelEvaluations(fx.Context(), &ListModelEvaluationsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -993,7 +1018,7 @@ func (fx *ModelServiceModelEvaluationTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *ModelEvaluation) bool {
 					return a.Name < b.Name
 				}),
@@ -1062,6 +1087,23 @@ func (fx *ModelServiceModelEvaluationTestSuiteConfig) normalizeAll(msgs []*Model
 	return normalized
 }
 
+func (fx *ModelServiceModelEvaluationTestSuiteConfig) listed(t *testing.T, parent string, want, got []*ModelEvaluation) []*ModelEvaluation {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*ModelEvaluation, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *ModelServiceModelEvaluationTestSuiteConfig) create(t *testing.T, parent string) *ModelEvaluation {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -1091,6 +1133,10 @@ type ModelServiceModelEvaluationSliceTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a ModelEvaluationSlice and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -1221,7 +1267,7 @@ func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) testList(t *testing.T
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.ModelEvaluationSlices),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.ModelEvaluationSlices)),
 				cmpopts.SortSlices(func(a, b *ModelEvaluationSlice) bool {
 					return a.Name < b.Name
 				}),
@@ -1234,7 +1280,7 @@ func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) testList(t *testing.T
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListModelEvaluationSlices(fx.Context(), &ListModelEvaluationSlicesRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -1273,7 +1319,7 @@ func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) testList(t *testing.T
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *ModelEvaluationSlice) bool {
 					return a.Name < b.Name
 				}),
@@ -1340,6 +1386,23 @@ func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) normalizeAll(msgs []*
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) listed(t *testing.T, parent string, want, got []*ModelEvaluationSlice) []*ModelEvaluationSlice {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*ModelEvaluationSlice, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) create(t *testing.T, parent string) *ModelEvaluationSlice {

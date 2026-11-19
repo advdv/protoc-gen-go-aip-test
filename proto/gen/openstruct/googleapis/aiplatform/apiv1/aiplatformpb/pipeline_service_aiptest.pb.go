@@ -98,6 +98,10 @@ type PipelineServicePipelineJobTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *PipelineJob
@@ -342,7 +346,7 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.PipelineJobs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.PipelineJobs)),
 				cmpopts.SortSlices(func(a, b *PipelineJob) bool {
 					return a.Name < b.Name
 				}),
@@ -355,7 +359,7 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListPipelineJobs(fx.Context(), &ListPipelineJobsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -394,7 +398,7 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *PipelineJob) bool {
 					return a.Name < b.Name
 				}),
@@ -441,7 +445,7 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.PipelineJobs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.PipelineJobs)),
 				cmpopts.SortSlices(func(a, b *PipelineJob) bool {
 					return a.Name < b.Name
 				}),
@@ -567,6 +571,23 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) normalizeAll(msgs []*Pipeli
 	return normalized
 }
 
+func (fx *PipelineServicePipelineJobTestSuiteConfig) listed(t *testing.T, parent string, want, got []*PipelineJob) []*PipelineJob {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*PipelineJob, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *PipelineServicePipelineJobTestSuiteConfig) create(t *testing.T, parent string) *PipelineJob {
 	t.Helper()
 	created, err := fx.Service().CreatePipelineJob(fx.Context(), &CreatePipelineJobRequest{
@@ -596,6 +617,10 @@ type PipelineServiceTrainingPipelineTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *TrainingPipeline
@@ -1160,7 +1185,7 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) testList(t *testing.T)
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.TrainingPipelines),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.TrainingPipelines)),
 				cmpopts.SortSlices(func(a, b *TrainingPipeline) bool {
 					return a.Name < b.Name
 				}),
@@ -1173,7 +1198,7 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) testList(t *testing.T)
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListTrainingPipelines(fx.Context(), &ListTrainingPipelinesRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -1212,7 +1237,7 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) testList(t *testing.T)
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *TrainingPipeline) bool {
 					return a.Name < b.Name
 				}),
@@ -1259,7 +1284,7 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) testList(t *testing.T)
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.TrainingPipelines),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.TrainingPipelines)),
 				cmpopts.SortSlices(func(a, b *TrainingPipeline) bool {
 					return a.Name < b.Name
 				}),
@@ -1383,6 +1408,23 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) normalizeAll(msgs []*T
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) listed(t *testing.T, parent string, want, got []*TrainingPipeline) []*TrainingPipeline {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*TrainingPipeline, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) create(t *testing.T, parent string) *TrainingPipeline {

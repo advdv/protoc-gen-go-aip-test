@@ -125,6 +125,10 @@ type DatabaseAdminBackupTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Backup
@@ -376,7 +380,7 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.Backups),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.Backups)),
 				cmpopts.SortSlices(func(a, b *Backup) bool {
 					return a.Name < b.Name
 				}),
@@ -389,7 +393,7 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListBackups(fx.Context(), &ListBackupsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -428,7 +432,7 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Backup) bool {
 					return a.Name < b.Name
 				}),
@@ -475,7 +479,7 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.Backups),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.Backups)),
 				cmpopts.SortSlices(func(a, b *Backup) bool {
 					return a.Name < b.Name
 				}),
@@ -601,6 +605,23 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) normalizeAll(msgs []*Backup) []*Ba
 	return normalized
 }
 
+func (fx *DatabaseAdminBackupTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Backup) []*Backup {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*Backup, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *DatabaseAdminBackupTestSuiteConfig) create(t *testing.T, parent string) *Backup {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -626,6 +647,10 @@ type DatabaseAdminDatabaseTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a Database and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -842,7 +867,7 @@ func (fx *DatabaseAdminDatabaseTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.Databases),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.Databases)),
 				cmpopts.SortSlices(func(a, b *Database) bool {
 					return a.Name < b.Name
 				}),
@@ -855,7 +880,7 @@ func (fx *DatabaseAdminDatabaseTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListDatabases(fx.Context(), &ListDatabasesRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -894,7 +919,7 @@ func (fx *DatabaseAdminDatabaseTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Database) bool {
 					return a.Name < b.Name
 				}),
@@ -963,6 +988,23 @@ func (fx *DatabaseAdminDatabaseTestSuiteConfig) normalizeAll(msgs []*Database) [
 	return normalized
 }
 
+func (fx *DatabaseAdminDatabaseTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Database) []*Database {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*Database, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *DatabaseAdminDatabaseTestSuiteConfig) create(t *testing.T, parent string) *Database {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -992,6 +1034,10 @@ type DatabaseAdminDatabaseRoleTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a DatabaseRole and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -1067,7 +1113,7 @@ func (fx *DatabaseAdminDatabaseRoleTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.DatabaseRoles),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.DatabaseRoles)),
 				cmpopts.SortSlices(func(a, b *DatabaseRole) bool {
 					return a.Name < b.Name
 				}),
@@ -1080,7 +1126,7 @@ func (fx *DatabaseAdminDatabaseRoleTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListDatabaseRoles(fx.Context(), &ListDatabaseRolesRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -1119,7 +1165,7 @@ func (fx *DatabaseAdminDatabaseRoleTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *DatabaseRole) bool {
 					return a.Name < b.Name
 				}),
@@ -1186,6 +1232,23 @@ func (fx *DatabaseAdminDatabaseRoleTestSuiteConfig) normalizeAll(msgs []*Databas
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *DatabaseAdminDatabaseRoleTestSuiteConfig) listed(t *testing.T, parent string, want, got []*DatabaseRole) []*DatabaseRole {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*DatabaseRole, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *DatabaseAdminDatabaseRoleTestSuiteConfig) create(t *testing.T, parent string) *DatabaseRole {

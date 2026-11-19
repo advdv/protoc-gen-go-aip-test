@@ -71,6 +71,10 @@ type SpecialistPoolServiceSpecialistPoolTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *SpecialistPool
@@ -367,7 +371,7 @@ func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) testList(t *testin
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.GetSpecialistPools()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.GetSpecialistPools())),
 				cmpopts.SortSlices(func(a, b *SpecialistPool) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -380,7 +384,7 @@ func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) testList(t *testin
 			fx.maybeSkip(t)
 			req := &ListSpecialistPoolsRequest{}
 			req.SetParent(parent)
-			req.SetPageSize(resourcesCount)
+			req.SetPageSize(int32(resourcesCount + fx.Preexisting))
 			response, err := fx.Service().ListSpecialistPools(fx.Context(), req)
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.GetNextPageToken())
@@ -419,7 +423,7 @@ func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) testList(t *testin
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *SpecialistPool) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -466,7 +470,7 @@ func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) testList(t *testin
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.GetSpecialistPools()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.GetSpecialistPools())),
 				cmpopts.SortSlices(func(a, b *SpecialistPool) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -590,6 +594,23 @@ func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) normalizeAll(msgs 
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) listed(t *testing.T, parent string, want, got []*SpecialistPool) []*SpecialistPool {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*SpecialistPool, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) create(t *testing.T, parent string) *SpecialistPool {

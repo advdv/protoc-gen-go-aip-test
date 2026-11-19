@@ -125,6 +125,10 @@ type FeaturestoreServiceEntityTypeTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *EntityType
@@ -384,7 +388,7 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.EntityTypes),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.EntityTypes)),
 				cmpopts.SortSlices(func(a, b *EntityType) bool {
 					return a.Name < b.Name
 				}),
@@ -397,7 +401,7 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListEntityTypes(fx.Context(), &ListEntityTypesRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -436,7 +440,7 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *EntityType) bool {
 					return a.Name < b.Name
 				}),
@@ -483,7 +487,7 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.EntityTypes),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.EntityTypes)),
 				cmpopts.SortSlices(func(a, b *EntityType) bool {
 					return a.Name < b.Name
 				}),
@@ -609,6 +613,23 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) normalizeAll(msgs []*Ent
 	return normalized
 }
 
+func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) listed(t *testing.T, parent string, want, got []*EntityType) []*EntityType {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*EntityType, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) create(t *testing.T, parent string) *EntityType {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -634,6 +655,10 @@ type FeaturestoreServiceFeatureTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Feature
@@ -910,7 +935,7 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.Features),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.Features)),
 				cmpopts.SortSlices(func(a, b *Feature) bool {
 					return a.Name < b.Name
 				}),
@@ -923,7 +948,7 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListFeatures(fx.Context(), &ListFeaturesRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -962,7 +987,7 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Feature) bool {
 					return a.Name < b.Name
 				}),
@@ -1009,7 +1034,7 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.Features),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.Features)),
 				cmpopts.SortSlices(func(a, b *Feature) bool {
 					return a.Name < b.Name
 				}),
@@ -1135,6 +1160,23 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) normalizeAll(msgs []*Featur
 	return normalized
 }
 
+func (fx *FeaturestoreServiceFeatureTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Feature) []*Feature {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*Feature, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *FeaturestoreServiceFeatureTestSuiteConfig) create(t *testing.T, parent string) *Feature {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -1171,6 +1213,10 @@ type FeaturestoreServiceFeaturestoreTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Featurestore
@@ -1494,7 +1540,7 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) testList(t *testing.T)
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.Featurestores),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.Featurestores)),
 				cmpopts.SortSlices(func(a, b *Featurestore) bool {
 					return a.Name < b.Name
 				}),
@@ -1507,7 +1553,7 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) testList(t *testing.T)
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListFeaturestores(fx.Context(), &ListFeaturestoresRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -1546,7 +1592,7 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) testList(t *testing.T)
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Featurestore) bool {
 					return a.Name < b.Name
 				}),
@@ -1593,7 +1639,7 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) testList(t *testing.T)
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.Featurestores),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.Featurestores)),
 				cmpopts.SortSlices(func(a, b *Featurestore) bool {
 					return a.Name < b.Name
 				}),
@@ -1717,6 +1763,23 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) normalizeAll(msgs []*F
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Featurestore) []*Featurestore {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*Featurestore, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) create(t *testing.T, parent string) *Featurestore {

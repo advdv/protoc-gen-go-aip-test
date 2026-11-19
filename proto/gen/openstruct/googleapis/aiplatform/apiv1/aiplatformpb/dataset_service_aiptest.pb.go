@@ -206,6 +206,10 @@ type DatasetServiceAnnotationTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a Annotation and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -281,7 +285,7 @@ func (fx *DatasetServiceAnnotationTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.Annotations),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.Annotations)),
 				cmpopts.SortSlices(func(a, b *Annotation) bool {
 					return a.Name < b.Name
 				}),
@@ -294,7 +298,7 @@ func (fx *DatasetServiceAnnotationTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListAnnotations(fx.Context(), &ListAnnotationsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -333,7 +337,7 @@ func (fx *DatasetServiceAnnotationTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Annotation) bool {
 					return a.Name < b.Name
 				}),
@@ -402,6 +406,23 @@ func (fx *DatasetServiceAnnotationTestSuiteConfig) normalizeAll(msgs []*Annotati
 	return normalized
 }
 
+func (fx *DatasetServiceAnnotationTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Annotation) []*Annotation {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*Annotation, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *DatasetServiceAnnotationTestSuiteConfig) create(t *testing.T, parent string) *Annotation {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -431,6 +452,10 @@ type DatasetServiceAnnotationSpecTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a AnnotationSpec and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -553,6 +578,23 @@ func (fx *DatasetServiceAnnotationSpecTestSuiteConfig) normalizeAll(msgs []*Anno
 	return normalized
 }
 
+func (fx *DatasetServiceAnnotationSpecTestSuiteConfig) listed(t *testing.T, parent string, want, got []*AnnotationSpec) []*AnnotationSpec {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*AnnotationSpec, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *DatasetServiceAnnotationSpecTestSuiteConfig) create(t *testing.T, parent string) *AnnotationSpec {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -582,6 +624,10 @@ type DatasetServiceDataItemTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a DataItem and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -657,7 +703,7 @@ func (fx *DatasetServiceDataItemTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.DataItems),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.DataItems)),
 				cmpopts.SortSlices(func(a, b *DataItem) bool {
 					return a.Name < b.Name
 				}),
@@ -670,7 +716,7 @@ func (fx *DatasetServiceDataItemTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListDataItems(fx.Context(), &ListDataItemsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -709,7 +755,7 @@ func (fx *DatasetServiceDataItemTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *DataItem) bool {
 					return a.Name < b.Name
 				}),
@@ -778,6 +824,23 @@ func (fx *DatasetServiceDataItemTestSuiteConfig) normalizeAll(msgs []*DataItem) 
 	return normalized
 }
 
+func (fx *DatasetServiceDataItemTestSuiteConfig) listed(t *testing.T, parent string, want, got []*DataItem) []*DataItem {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*DataItem, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *DatasetServiceDataItemTestSuiteConfig) create(t *testing.T, parent string) *DataItem {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -807,6 +870,10 @@ type DatasetServiceDatasetTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Dataset
@@ -1236,7 +1303,7 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.Datasets),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.Datasets)),
 				cmpopts.SortSlices(func(a, b *Dataset) bool {
 					return a.Name < b.Name
 				}),
@@ -1249,7 +1316,7 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListDatasets(fx.Context(), &ListDatasetsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -1288,7 +1355,7 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Dataset) bool {
 					return a.Name < b.Name
 				}),
@@ -1335,7 +1402,7 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.Datasets),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.Datasets)),
 				cmpopts.SortSlices(func(a, b *Dataset) bool {
 					return a.Name < b.Name
 				}),
@@ -1461,6 +1528,23 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) normalizeAll(msgs []*Dataset) []
 	return normalized
 }
 
+func (fx *DatasetServiceDatasetTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Dataset) []*Dataset {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*Dataset, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *DatasetServiceDatasetTestSuiteConfig) create(t *testing.T, parent string) *Dataset {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -1486,6 +1570,10 @@ type DatasetServiceDatasetVersionTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *DatasetVersion
@@ -1639,7 +1727,7 @@ func (fx *DatasetServiceDatasetVersionTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.DatasetVersions),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.DatasetVersions)),
 				cmpopts.SortSlices(func(a, b *DatasetVersion) bool {
 					return a.Name < b.Name
 				}),
@@ -1652,7 +1740,7 @@ func (fx *DatasetServiceDatasetVersionTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListDatasetVersions(fx.Context(), &ListDatasetVersionsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -1691,7 +1779,7 @@ func (fx *DatasetServiceDatasetVersionTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *DatasetVersion) bool {
 					return a.Name < b.Name
 				}),
@@ -1738,7 +1826,7 @@ func (fx *DatasetServiceDatasetVersionTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.DatasetVersions),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.DatasetVersions)),
 				cmpopts.SortSlices(func(a, b *DatasetVersion) bool {
 					return a.Name < b.Name
 				}),
@@ -1864,6 +1952,23 @@ func (fx *DatasetServiceDatasetVersionTestSuiteConfig) normalizeAll(msgs []*Data
 	return normalized
 }
 
+func (fx *DatasetServiceDatasetVersionTestSuiteConfig) listed(t *testing.T, parent string, want, got []*DatasetVersion) []*DatasetVersion {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*DatasetVersion, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *DatasetServiceDatasetVersionTestSuiteConfig) create(t *testing.T, parent string) *DatasetVersion {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -1889,6 +1994,10 @@ type DatasetServiceSavedQueryTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a SavedQuery and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -1965,7 +2074,7 @@ func (fx *DatasetServiceSavedQueryTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.SavedQueries),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.SavedQueries)),
 				cmpopts.SortSlices(func(a, b *SavedQuery) bool {
 					return a.Name < b.Name
 				}),
@@ -1978,7 +2087,7 @@ func (fx *DatasetServiceSavedQueryTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListSavedQueries(fx.Context(), &ListSavedQueriesRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -2017,7 +2126,7 @@ func (fx *DatasetServiceSavedQueryTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *SavedQuery) bool {
 					return a.Name < b.Name
 				}),
@@ -2064,7 +2173,7 @@ func (fx *DatasetServiceSavedQueryTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.SavedQueries),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.SavedQueries)),
 				cmpopts.SortSlices(func(a, b *SavedQuery) bool {
 					return a.Name < b.Name
 				}),
@@ -2188,6 +2297,23 @@ func (fx *DatasetServiceSavedQueryTestSuiteConfig) normalizeAll(msgs []*SavedQue
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *DatasetServiceSavedQueryTestSuiteConfig) listed(t *testing.T, parent string, want, got []*SavedQuery) []*SavedQuery {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*SavedQuery, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *DatasetServiceSavedQueryTestSuiteConfig) create(t *testing.T, parent string) *SavedQuery {

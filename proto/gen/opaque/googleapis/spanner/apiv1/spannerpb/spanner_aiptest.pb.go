@@ -69,6 +69,10 @@ type SpannerSessionTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a Session and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -259,6 +263,23 @@ func (fx *SpannerSessionTestSuiteConfig) normalizeAll(msgs []*Session) []*Sessio
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *SpannerSessionTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Session) []*Session {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*Session, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *SpannerSessionTestSuiteConfig) create(t *testing.T, parent string) *Session {

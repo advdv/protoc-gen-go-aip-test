@@ -38,7 +38,14 @@ var isolation = suite.Test{
 		f.P(ident.AssertDeepEqual, "(")
 		f.P("t,")
 		f.P(ident.FixtureNormalizeAll, "(parentMsgs),")
-		f.P(ident.FixtureNormalizeAll, "(", util.FieldGet("response", responseResources, apiMode), "),")
+		f.P(
+			ident.FixtureNormalizeAll,
+			"(",
+			ident.FixtureListed,
+			"(t, parent, parentMsgs, ",
+			util.FieldGet("response", responseResources, apiMode),
+			")),",
+		)
 		f.P(ident.CmpoptsSortSlices, "(func(a,b *", scope.Message.GoIdent, ") bool {")
 		f.P("return ", util.FieldGet("a", "Name", apiMode), " < ", util.FieldGet("b", "Name", apiMode))
 		f.P("}),")

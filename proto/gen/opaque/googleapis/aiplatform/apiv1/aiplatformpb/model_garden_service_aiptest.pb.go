@@ -69,6 +69,10 @@ type ModelGardenServicePublisherModelTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a PublisherModel and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -189,6 +193,23 @@ func (fx *ModelGardenServicePublisherModelTestSuiteConfig) normalizeAll(msgs []*
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *ModelGardenServicePublisherModelTestSuiteConfig) listed(t *testing.T, parent string, want, got []*PublisherModel) []*PublisherModel {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*PublisherModel, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *ModelGardenServicePublisherModelTestSuiteConfig) create(t *testing.T, parent string) *PublisherModel {

@@ -240,6 +240,10 @@ type GSuiteAddOnsDeploymentTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Deployment
@@ -491,7 +495,7 @@ func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.Deployments),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.Deployments)),
 				cmpopts.SortSlices(func(a, b *Deployment) bool {
 					return a.Name < b.Name
 				}),
@@ -504,7 +508,7 @@ func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListDeployments(fx.Context(), &ListDeploymentsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -543,7 +547,7 @@ func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Deployment) bool {
 					return a.Name < b.Name
 				}),
@@ -590,7 +594,7 @@ func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.Deployments),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.Deployments)),
 				cmpopts.SortSlices(func(a, b *Deployment) bool {
 					return a.Name < b.Name
 				}),
@@ -728,6 +732,23 @@ func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) normalizeAll(msgs []*Deployment
 	return normalized
 }
 
+func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Deployment) []*Deployment {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*Deployment, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) create(t *testing.T, parent string) *Deployment {
 	t.Helper()
 	created, err := fx.Service().CreateDeployment(fx.Context(), &CreateDeploymentRequest{
@@ -757,6 +778,10 @@ type GSuiteAddOnsInstallStatusTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// CreateResource should create a InstallStatus and return it.
 	// If the field is not set, some tests will be skipped.
 	//
@@ -866,6 +891,23 @@ func (fx *GSuiteAddOnsInstallStatusTestSuiteConfig) normalizeAll(msgs []*Install
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *GSuiteAddOnsInstallStatusTestSuiteConfig) listed(t *testing.T, parent string, want, got []*InstallStatus) []*InstallStatus {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*InstallStatus, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *GSuiteAddOnsInstallStatusTestSuiteConfig) create(t *testing.T, parent string) *InstallStatus {

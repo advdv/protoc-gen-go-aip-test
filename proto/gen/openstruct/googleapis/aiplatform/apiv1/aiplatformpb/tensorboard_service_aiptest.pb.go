@@ -153,6 +153,10 @@ type TensorboardServiceTensorboardTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Tensorboard
@@ -476,7 +480,7 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.Tensorboards),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.Tensorboards)),
 				cmpopts.SortSlices(func(a, b *Tensorboard) bool {
 					return a.Name < b.Name
 				}),
@@ -489,7 +493,7 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListTensorboards(fx.Context(), &ListTensorboardsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -528,7 +532,7 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Tensorboard) bool {
 					return a.Name < b.Name
 				}),
@@ -575,7 +579,7 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.Tensorboards),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.Tensorboards)),
 				cmpopts.SortSlices(func(a, b *Tensorboard) bool {
 					return a.Name < b.Name
 				}),
@@ -701,6 +705,23 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) normalizeAll(msgs []*Ten
 	return normalized
 }
 
+func (fx *TensorboardServiceTensorboardTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Tensorboard) []*Tensorboard {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*Tensorboard, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *TensorboardServiceTensorboardTestSuiteConfig) create(t *testing.T, parent string) *Tensorboard {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -726,6 +747,10 @@ type TensorboardServiceTensorboardExperimentTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *TensorboardExperiment
@@ -1041,7 +1066,7 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testList(t *te
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.TensorboardExperiments),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.TensorboardExperiments)),
 				cmpopts.SortSlices(func(a, b *TensorboardExperiment) bool {
 					return a.Name < b.Name
 				}),
@@ -1054,7 +1079,7 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testList(t *te
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListTensorboardExperiments(fx.Context(), &ListTensorboardExperimentsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -1093,7 +1118,7 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testList(t *te
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *TensorboardExperiment) bool {
 					return a.Name < b.Name
 				}),
@@ -1140,7 +1165,7 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testList(t *te
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.TensorboardExperiments),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.TensorboardExperiments)),
 				cmpopts.SortSlices(func(a, b *TensorboardExperiment) bool {
 					return a.Name < b.Name
 				}),
@@ -1266,6 +1291,23 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) normalizeAll(m
 	return normalized
 }
 
+func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) listed(t *testing.T, parent string, want, got []*TensorboardExperiment) []*TensorboardExperiment {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*TensorboardExperiment, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) create(t *testing.T, parent string) *TensorboardExperiment {
 	t.Helper()
 	created, err := fx.Service().CreateTensorboardExperiment(fx.Context(), &CreateTensorboardExperimentRequest{
@@ -1295,6 +1337,10 @@ type TensorboardServiceTensorboardRunTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *TensorboardRun
@@ -1675,7 +1721,7 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testList(t *testing.T
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.TensorboardRuns),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.TensorboardRuns)),
 				cmpopts.SortSlices(func(a, b *TensorboardRun) bool {
 					return a.Name < b.Name
 				}),
@@ -1688,7 +1734,7 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testList(t *testing.T
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListTensorboardRuns(fx.Context(), &ListTensorboardRunsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -1727,7 +1773,7 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testList(t *testing.T
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *TensorboardRun) bool {
 					return a.Name < b.Name
 				}),
@@ -1774,7 +1820,7 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testList(t *testing.T
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.TensorboardRuns),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.TensorboardRuns)),
 				cmpopts.SortSlices(func(a, b *TensorboardRun) bool {
 					return a.Name < b.Name
 				}),
@@ -1900,6 +1946,23 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) normalizeAll(msgs []*
 	return normalized
 }
 
+func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) listed(t *testing.T, parent string, want, got []*TensorboardRun) []*TensorboardRun {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*TensorboardRun, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) create(t *testing.T, parent string) *TensorboardRun {
 	t.Helper()
 	created, err := fx.Service().CreateTensorboardRun(fx.Context(), &CreateTensorboardRunRequest{
@@ -1929,6 +1992,10 @@ type TensorboardServiceTensorboardTimeSeriesTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *TensorboardTimeSeries
@@ -2325,7 +2392,7 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testList(t *te
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.TensorboardTimeSeries),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.TensorboardTimeSeries)),
 				cmpopts.SortSlices(func(a, b *TensorboardTimeSeries) bool {
 					return a.Name < b.Name
 				}),
@@ -2338,7 +2405,7 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testList(t *te
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListTensorboardTimeSeries(fx.Context(), &ListTensorboardTimeSeriesRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -2377,7 +2444,7 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testList(t *te
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *TensorboardTimeSeries) bool {
 					return a.Name < b.Name
 				}),
@@ -2424,7 +2491,7 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testList(t *te
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.TensorboardTimeSeries),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.TensorboardTimeSeries)),
 				cmpopts.SortSlices(func(a, b *TensorboardTimeSeries) bool {
 					return a.Name < b.Name
 				}),
@@ -2548,6 +2615,23 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) normalizeAll(m
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) listed(t *testing.T, parent string, want, got []*TensorboardTimeSeries) []*TensorboardTimeSeries {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*TensorboardTimeSeries, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) create(t *testing.T, parent string) *TensorboardTimeSeries {

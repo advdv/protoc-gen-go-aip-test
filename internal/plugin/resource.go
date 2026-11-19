@@ -28,6 +28,7 @@ func (r *resourceGenerator) Generate(f *protogen.GeneratedFile) error {
 	r.generateParentMethods(f)
 	r.generateSkip(f)
 	r.generateNormalize(f)
+	r.generateListed(f)
 	r.generateCreate(f)
 	r.generateUserSettableID(f)
 	r.generateNotFoundName(f)
@@ -57,6 +58,10 @@ func (r *resourceGenerator) generateFixture(f *protogen.GeneratedFile) {
 		f.P("// more may be required. If insufficient number of parents are")
 		f.P("// provided the test will fail.")
 		f.P("Parents []string")
+		f.P("// Preexisting is the number of resources each parent has before the tests create any,")
+		f.P("// such as ones the service creates together with the parent. The List and Search tests")
+		f.P("// expect that many resources under the parent besides the ones they create.")
+		f.P("Preexisting int")
 	}
 	createMethod, hasCreate := util.StandardMethod(r.service, r.resource, aipreflect.MethodTypeCreate)
 	if hasCreate {
@@ -368,6 +373,46 @@ func (r *resourceGenerator) generateNormalize(f *protogen.GeneratedFile) {
 	f.P("normalized[i] = fx.normalize(msg)")
 	f.P("}")
 	f.P("return normalized")
+	f.P("}")
+	f.P()
+}
+
+func (r *resourceGenerator) generateListed(f *protogen.GeneratedFile) {
+	if !util.HasParent(r.resource) {
+		return
+	}
+	testingT := f.QualifiedGoIdent(protogen.GoIdent{
+		GoName:       "T",
+		GoImportPath: "testing",
+	})
+	stringsHasPrefix := f.QualifiedGoIdent(protogen.GoIdent{
+		GoName:       "HasPrefix",
+		GoImportPath: "strings",
+	})
+	apiMode := r.config.toUtilAPIMode()
+	f.P(
+		"func (fx *",
+		resourceTestSuiteConfigName(r.service.Desc, r.resource),
+		") listed(t *", testingT, ", parent string, want, got []*", r.message.GoIdent, ") []*", r.message.GoIdent, " {",
+	)
+	f.P("t.Helper()")
+	f.P(ident.AssertEqual, "(t, len(want)+fx.Preexisting, len(got), \"listed resources, with Preexisting\")")
+	f.P("names := make(map[string]bool, len(want))")
+	f.P("for _, msg := range want {")
+	f.P("names[", util.FieldGet("msg", "Name", apiMode), "] = true")
+	f.P("}")
+	f.P("created := make([]*", r.message.GoIdent, ", 0, len(want))")
+	f.P("for _, msg := range got {")
+	f.P(
+		ident.AssertCheck,
+		"(t, ", stringsHasPrefix, "(", util.FieldGet("msg", "Name", apiMode), ", parent+\"/\"), ",
+		"\"listed resource is not under the parent\")",
+	)
+	f.P("if names[", util.FieldGet("msg", "Name", apiMode), "] {")
+	f.P("created = append(created, msg)")
+	f.P("}")
+	f.P("}")
+	f.P("return created")
 	f.P("}")
 	f.P()
 }

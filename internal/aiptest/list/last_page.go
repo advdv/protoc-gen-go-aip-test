@@ -26,7 +26,7 @@ var lastPage = suite.Test{
 			Resource: scope.Resource,
 			Method:   listMethod,
 			Parent:   "parent",
-			PageSize: "resourcesCount",
+			PageSize: "int32(resourcesCount + fx.Preexisting)",
 		}.Generate(f, "req", "response", "err", ":=", apiMode)
 		f.P(ident.AssertNilError, "(t, err)")
 		f.P(ident.AssertEqual, "(t, \"\", ", util.FieldGet("response", "NextPageToken", apiMode), ")")

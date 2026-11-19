@@ -125,6 +125,10 @@ type InstanceAdminInstanceTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Instance
@@ -568,7 +572,7 @@ func (fx *InstanceAdminInstanceTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.GetInstances()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.GetInstances())),
 				cmpopts.SortSlices(func(a, b *Instance) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -581,7 +585,7 @@ func (fx *InstanceAdminInstanceTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			req := &ListInstancesRequest{}
 			req.SetParent(parent)
-			req.SetPageSize(resourcesCount)
+			req.SetPageSize(int32(resourcesCount + fx.Preexisting))
 			response, err := fx.Service().ListInstances(fx.Context(), req)
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.GetNextPageToken())
@@ -620,7 +624,7 @@ func (fx *InstanceAdminInstanceTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Instance) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -667,7 +671,7 @@ func (fx *InstanceAdminInstanceTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.GetInstances()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.GetInstances())),
 				cmpopts.SortSlices(func(a, b *Instance) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -793,6 +797,23 @@ func (fx *InstanceAdminInstanceTestSuiteConfig) normalizeAll(msgs []*Instance) [
 	return normalized
 }
 
+func (fx *InstanceAdminInstanceTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Instance) []*Instance {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*Instance, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *InstanceAdminInstanceTestSuiteConfig) create(t *testing.T, parent string) *Instance {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -818,6 +839,10 @@ type InstanceAdminInstanceConfigTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *InstanceConfig
@@ -1080,7 +1105,7 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.GetInstanceConfigs()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.GetInstanceConfigs())),
 				cmpopts.SortSlices(func(a, b *InstanceConfig) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1093,7 +1118,7 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			req := &ListInstanceConfigsRequest{}
 			req.SetParent(parent)
-			req.SetPageSize(resourcesCount)
+			req.SetPageSize(int32(resourcesCount + fx.Preexisting))
 			response, err := fx.Service().ListInstanceConfigs(fx.Context(), req)
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.GetNextPageToken())
@@ -1132,7 +1157,7 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *InstanceConfig) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1179,7 +1204,7 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.GetInstanceConfigs()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.GetInstanceConfigs())),
 				cmpopts.SortSlices(func(a, b *InstanceConfig) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1317,6 +1342,23 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) normalizeAll(msgs []*Insta
 	return normalized
 }
 
+func (fx *InstanceAdminInstanceConfigTestSuiteConfig) listed(t *testing.T, parent string, want, got []*InstanceConfig) []*InstanceConfig {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*InstanceConfig, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *InstanceAdminInstanceConfigTestSuiteConfig) create(t *testing.T, parent string) *InstanceConfig {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -1342,6 +1384,10 @@ type InstanceAdminInstancePartitionTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *InstancePartition
@@ -1692,7 +1738,7 @@ func (fx *InstanceAdminInstancePartitionTestSuiteConfig) testList(t *testing.T) 
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.GetInstancePartitions()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.GetInstancePartitions())),
 				cmpopts.SortSlices(func(a, b *InstancePartition) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1705,7 +1751,7 @@ func (fx *InstanceAdminInstancePartitionTestSuiteConfig) testList(t *testing.T) 
 			fx.maybeSkip(t)
 			req := &ListInstancePartitionsRequest{}
 			req.SetParent(parent)
-			req.SetPageSize(resourcesCount)
+			req.SetPageSize(int32(resourcesCount + fx.Preexisting))
 			response, err := fx.Service().ListInstancePartitions(fx.Context(), req)
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.GetNextPageToken())
@@ -1744,7 +1790,7 @@ func (fx *InstanceAdminInstancePartitionTestSuiteConfig) testList(t *testing.T) 
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *InstancePartition) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1791,7 +1837,7 @@ func (fx *InstanceAdminInstancePartitionTestSuiteConfig) testList(t *testing.T) 
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.GetInstancePartitions()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.GetInstancePartitions())),
 				cmpopts.SortSlices(func(a, b *InstancePartition) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1927,6 +1973,23 @@ func (fx *InstanceAdminInstancePartitionTestSuiteConfig) normalizeAll(msgs []*In
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *InstanceAdminInstancePartitionTestSuiteConfig) listed(t *testing.T, parent string, want, got []*InstancePartition) []*InstancePartition {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*InstancePartition, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *InstanceAdminInstancePartitionTestSuiteConfig) create(t *testing.T, parent string) *InstancePartition {

@@ -98,6 +98,10 @@ type VizierServiceStudyTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Study
@@ -353,7 +357,7 @@ func (fx *VizierServiceStudyTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.Studies),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.Studies)),
 				cmpopts.SortSlices(func(a, b *Study) bool {
 					return a.Name < b.Name
 				}),
@@ -366,7 +370,7 @@ func (fx *VizierServiceStudyTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListStudies(fx.Context(), &ListStudiesRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -405,7 +409,7 @@ func (fx *VizierServiceStudyTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Study) bool {
 					return a.Name < b.Name
 				}),
@@ -452,7 +456,7 @@ func (fx *VizierServiceStudyTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.Studies),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.Studies)),
 				cmpopts.SortSlices(func(a, b *Study) bool {
 					return a.Name < b.Name
 				}),
@@ -578,6 +582,23 @@ func (fx *VizierServiceStudyTestSuiteConfig) normalizeAll(msgs []*Study) []*Stud
 	return normalized
 }
 
+func (fx *VizierServiceStudyTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Study) []*Study {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*Study, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
+}
+
 func (fx *VizierServiceStudyTestSuiteConfig) create(t *testing.T, parent string) *Study {
 	t.Helper()
 	created, err := fx.Service().CreateStudy(fx.Context(), &CreateStudyRequest{
@@ -607,6 +628,10 @@ type VizierServiceTrialTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Trial
@@ -776,7 +801,7 @@ func (fx *VizierServiceTrialTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.Trials),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.Trials)),
 				cmpopts.SortSlices(func(a, b *Trial) bool {
 					return a.Name < b.Name
 				}),
@@ -789,7 +814,7 @@ func (fx *VizierServiceTrialTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			response, err := fx.Service().ListTrials(fx.Context(), &ListTrialsRequest{
 				Parent:   parent,
-				PageSize: resourcesCount,
+				PageSize: int32(resourcesCount + fx.Preexisting),
 			})
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.NextPageToken)
@@ -828,7 +853,7 @@ func (fx *VizierServiceTrialTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Trial) bool {
 					return a.Name < b.Name
 				}),
@@ -875,7 +900,7 @@ func (fx *VizierServiceTrialTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.Trials),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.Trials)),
 				cmpopts.SortSlices(func(a, b *Trial) bool {
 					return a.Name < b.Name
 				}),
@@ -999,6 +1024,23 @@ func (fx *VizierServiceTrialTestSuiteConfig) normalizeAll(msgs []*Trial) []*Tria
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *VizierServiceTrialTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Trial) []*Trial {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.Name] = true
+	}
+	created := make([]*Trial, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.Name, parent+"/"), "listed resource is not under the parent")
+		if names[msg.Name] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *VizierServiceTrialTestSuiteConfig) create(t *testing.T, parent string) *Trial {

@@ -71,6 +71,10 @@ type EndpointServiceEndpointTestSuiteConfig struct {
 	// more may be required. If insufficient number of parents are
 	// provided the test will fail.
 	Parents []string
+	// Preexisting is the number of resources each parent has before the tests create any,
+	// such as ones the service creates together with the parent. The List and Search tests
+	// expect that many resources under the parent besides the ones they create.
+	Preexisting int
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Endpoint
@@ -486,7 +490,7 @@ func (fx *EndpointServiceEndpointTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(response.GetEndpoints()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, response.GetEndpoints())),
 				cmpopts.SortSlices(func(a, b *Endpoint) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -499,7 +503,7 @@ func (fx *EndpointServiceEndpointTestSuiteConfig) testList(t *testing.T) {
 			fx.maybeSkip(t)
 			req := &ListEndpointsRequest{}
 			req.SetParent(parent)
-			req.SetPageSize(resourcesCount)
+			req.SetPageSize(int32(resourcesCount + fx.Preexisting))
 			response, err := fx.Service().ListEndpoints(fx.Context(), req)
 			assert.NilError(t, err)
 			assert.Equal(t, "", response.GetNextPageToken())
@@ -538,7 +542,7 @@ func (fx *EndpointServiceEndpointTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs),
-				fx.normalizeAll(msgs),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs, msgs)),
 				cmpopts.SortSlices(func(a, b *Endpoint) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -585,7 +589,7 @@ func (fx *EndpointServiceEndpointTestSuiteConfig) testList(t *testing.T) {
 			assert.DeepEqual(
 				t,
 				fx.normalizeAll(parentMsgs[deleteCount:]),
-				fx.normalizeAll(response.GetEndpoints()),
+				fx.normalizeAll(fx.listed(t, parent, parentMsgs[deleteCount:], response.GetEndpoints())),
 				cmpopts.SortSlices(func(a, b *Endpoint) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -709,6 +713,23 @@ func (fx *EndpointServiceEndpointTestSuiteConfig) normalizeAll(msgs []*Endpoint)
 		normalized[i] = fx.normalize(msg)
 	}
 	return normalized
+}
+
+func (fx *EndpointServiceEndpointTestSuiteConfig) listed(t *testing.T, parent string, want, got []*Endpoint) []*Endpoint {
+	t.Helper()
+	assert.Equal(t, len(want)+fx.Preexisting, len(got), "listed resources, with Preexisting")
+	names := make(map[string]bool, len(want))
+	for _, msg := range want {
+		names[msg.GetName()] = true
+	}
+	created := make([]*Endpoint, 0, len(want))
+	for _, msg := range got {
+		assert.Check(t, strings.HasPrefix(msg.GetName(), parent+"/"), "listed resource is not under the parent")
+		if names[msg.GetName()] {
+			created = append(created, msg)
+		}
+	}
+	return created
 }
 
 func (fx *EndpointServiceEndpointTestSuiteConfig) create(t *testing.T, parent string) *Endpoint {
