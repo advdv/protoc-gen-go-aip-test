@@ -639,22 +639,6 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) testD
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		req1 := &DeleteFeatureOnlineStoreRequest{}
-		req1.SetName(created.GetName())
-		deleted, err := fx.Service().DeleteFeatureOnlineStore(fx.Context(), req1)
-		assert.NilError(t, err)
-		_ = deleted
-		req2 := &DeleteFeatureOnlineStoreRequest{}
-		req2.SetName(created.GetName())
-		_, err = fx.Service().DeleteFeatureOnlineStore(fx.Context(), req2)
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
 	// Method should fail with InvalidArgument if the provided name only contains wildcards ('-')
 	t.Run("only wildcards", func(t *testing.T) {
 		fx.maybeSkip(t)
@@ -1265,22 +1249,6 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) testDelete(t
 		req := &DeleteFeatureViewRequest{}
 		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteFeatureView(fx.Context(), req)
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		req1 := &DeleteFeatureViewRequest{}
-		req1.SetName(created.GetName())
-		deleted, err := fx.Service().DeleteFeatureView(fx.Context(), req1)
-		assert.NilError(t, err)
-		_ = deleted
-		req2 := &DeleteFeatureViewRequest{}
-		req2.SetName(created.GetName())
-		_, err = fx.Service().DeleteFeatureView(fx.Context(), req2)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 

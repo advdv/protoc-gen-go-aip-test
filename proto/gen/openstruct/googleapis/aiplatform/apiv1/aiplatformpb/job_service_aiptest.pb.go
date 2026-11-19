@@ -890,22 +890,6 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) testDelete(t *testing.T) 
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		deleted, err := fx.Service().DeleteBatchPredictionJob(fx.Context(), &DeleteBatchPredictionJobRequest{
-			Name: created.Name,
-		})
-		assert.NilError(t, err)
-		_ = deleted
-		_, err = fx.Service().DeleteBatchPredictionJob(fx.Context(), &DeleteBatchPredictionJobRequest{
-			Name: created.Name,
-		})
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
 	// Method should fail with InvalidArgument if the provided name only contains wildcards ('-')
 	t.Run("only wildcards", func(t *testing.T) {
 		fx.maybeSkip(t)
@@ -1517,22 +1501,6 @@ func (fx *JobServiceCustomJobTestSuiteConfig) testDelete(t *testing.T) {
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		deleted, err := fx.Service().DeleteCustomJob(fx.Context(), &DeleteCustomJobRequest{
-			Name: created.Name,
-		})
-		assert.NilError(t, err)
-		_ = deleted
-		_, err = fx.Service().DeleteCustomJob(fx.Context(), &DeleteCustomJobRequest{
-			Name: created.Name,
-		})
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
 	// Method should fail with InvalidArgument if the provided name only contains wildcards ('-')
 	t.Run("only wildcards", func(t *testing.T) {
 		fx.maybeSkip(t)
@@ -2112,22 +2080,6 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) testDelete(t *testing.T) {
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteDataLabelingJob(fx.Context(), &DeleteDataLabelingJobRequest{
 			Name: fx.notFoundName(created.Name),
-		})
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		deleted, err := fx.Service().DeleteDataLabelingJob(fx.Context(), &DeleteDataLabelingJobRequest{
-			Name: created.Name,
-		})
-		assert.NilError(t, err)
-		_ = deleted
-		_, err = fx.Service().DeleteDataLabelingJob(fx.Context(), &DeleteDataLabelingJobRequest{
-			Name: created.Name,
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -2819,22 +2771,6 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) testDelete(t *testin
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteHyperparameterTuningJob(fx.Context(), &DeleteHyperparameterTuningJobRequest{
 			Name: fx.notFoundName(created.Name),
-		})
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		deleted, err := fx.Service().DeleteHyperparameterTuningJob(fx.Context(), &DeleteHyperparameterTuningJobRequest{
-			Name: created.Name,
-		})
-		assert.NilError(t, err)
-		_ = deleted
-		_, err = fx.Service().DeleteHyperparameterTuningJob(fx.Context(), &DeleteHyperparameterTuningJobRequest{
-			Name: created.Name,
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -3672,22 +3608,6 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testDelete(t *t
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		deleted, err := fx.Service().DeleteModelDeploymentMonitoringJob(fx.Context(), &DeleteModelDeploymentMonitoringJobRequest{
-			Name: created.Name,
-		})
-		assert.NilError(t, err)
-		_ = deleted
-		_, err = fx.Service().DeleteModelDeploymentMonitoringJob(fx.Context(), &DeleteModelDeploymentMonitoringJobRequest{
-			Name: created.Name,
-		})
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
 	// Method should fail with InvalidArgument if the provided name only contains wildcards ('-')
 	t.Run("only wildcards", func(t *testing.T) {
 		fx.maybeSkip(t)
@@ -4439,22 +4359,6 @@ func (fx *JobServiceNasJobTestSuiteConfig) testDelete(t *testing.T) {
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteNasJob(fx.Context(), &DeleteNasJobRequest{
 			Name: fx.notFoundName(created.Name),
-		})
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		deleted, err := fx.Service().DeleteNasJob(fx.Context(), &DeleteNasJobRequest{
-			Name: created.Name,
-		})
-		assert.NilError(t, err)
-		_ = deleted
-		_, err = fx.Service().DeleteNasJob(fx.Context(), &DeleteNasJobRequest{
-			Name: created.Name,
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})

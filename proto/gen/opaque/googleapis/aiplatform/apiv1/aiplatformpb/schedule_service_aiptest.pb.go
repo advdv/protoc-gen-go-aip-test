@@ -778,22 +778,6 @@ func (fx *ScheduleServiceScheduleTestSuiteConfig) testDelete(t *testing.T) {
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		req1 := &DeleteScheduleRequest{}
-		req1.SetName(created.GetName())
-		deleted, err := fx.Service().DeleteSchedule(fx.Context(), req1)
-		assert.NilError(t, err)
-		_ = deleted
-		req2 := &DeleteScheduleRequest{}
-		req2.SetName(created.GetName())
-		_, err = fx.Service().DeleteSchedule(fx.Context(), req2)
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
 	// Method should fail with InvalidArgument if the provided name only contains wildcards ('-')
 	t.Run("only wildcards", func(t *testing.T) {
 		fx.maybeSkip(t)

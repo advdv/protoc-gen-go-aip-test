@@ -1455,22 +1455,6 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) testDelete(t *testing.T) {
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		req1 := &DeleteDatasetRequest{}
-		req1.SetName(created.GetName())
-		deleted, err := fx.Service().DeleteDataset(fx.Context(), req1)
-		assert.NilError(t, err)
-		_ = deleted
-		req2 := &DeleteDatasetRequest{}
-		req2.SetName(created.GetName())
-		_, err = fx.Service().DeleteDataset(fx.Context(), req2)
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
 	// Method should fail with InvalidArgument if the provided name only contains wildcards ('-')
 	t.Run("only wildcards", func(t *testing.T) {
 		fx.maybeSkip(t)
@@ -1879,22 +1863,6 @@ func (fx *DatasetServiceDatasetVersionTestSuiteConfig) testDelete(t *testing.T) 
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		req1 := &DeleteDatasetVersionRequest{}
-		req1.SetName(created.GetName())
-		deleted, err := fx.Service().DeleteDatasetVersion(fx.Context(), req1)
-		assert.NilError(t, err)
-		_ = deleted
-		req2 := &DeleteDatasetVersionRequest{}
-		req2.SetName(created.GetName())
-		_, err = fx.Service().DeleteDatasetVersion(fx.Context(), req2)
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
 	// Method should fail with InvalidArgument if the provided name only contains wildcards ('-')
 	t.Run("only wildcards", func(t *testing.T) {
 		fx.maybeSkip(t)
@@ -2223,22 +2191,6 @@ func (fx *DatasetServiceSavedQueryTestSuiteConfig) testDelete(t *testing.T) {
 		req := &DeleteSavedQueryRequest{}
 		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteSavedQuery(fx.Context(), req)
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		req1 := &DeleteSavedQueryRequest{}
-		req1.SetName(created.GetName())
-		deleted, err := fx.Service().DeleteSavedQuery(fx.Context(), req1)
-		assert.NilError(t, err)
-		_ = deleted
-		req2 := &DeleteSavedQueryRequest{}
-		req2.SetName(created.GetName())
-		_, err = fx.Service().DeleteSavedQuery(fx.Context(), req2)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 

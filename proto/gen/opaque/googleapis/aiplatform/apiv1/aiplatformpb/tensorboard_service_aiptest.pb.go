@@ -632,22 +632,6 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) testDelete(t *testing.T)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		req1 := &DeleteTensorboardRequest{}
-		req1.SetName(created.GetName())
-		deleted, err := fx.Service().DeleteTensorboard(fx.Context(), req1)
-		assert.NilError(t, err)
-		_ = deleted
-		req2 := &DeleteTensorboardRequest{}
-		req2.SetName(created.GetName())
-		_, err = fx.Service().DeleteTensorboard(fx.Context(), req2)
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
 	// Method should fail with InvalidArgument if the provided name only contains wildcards ('-')
 	t.Run("only wildcards", func(t *testing.T) {
 		fx.maybeSkip(t)
@@ -1215,22 +1199,6 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testDelete(t *
 		req := &DeleteTensorboardExperimentRequest{}
 		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteTensorboardExperiment(fx.Context(), req)
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		req1 := &DeleteTensorboardExperimentRequest{}
-		req1.SetName(created.GetName())
-		deleted, err := fx.Service().DeleteTensorboardExperiment(fx.Context(), req1)
-		assert.NilError(t, err)
-		_ = deleted
-		req2 := &DeleteTensorboardExperimentRequest{}
-		req2.SetName(created.GetName())
-		_, err = fx.Service().DeleteTensorboardExperiment(fx.Context(), req2)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 
@@ -1870,22 +1838,6 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testDelete(t *testing
 		req := &DeleteTensorboardRunRequest{}
 		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteTensorboardRun(fx.Context(), req)
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		req1 := &DeleteTensorboardRunRequest{}
-		req1.SetName(created.GetName())
-		deleted, err := fx.Service().DeleteTensorboardRun(fx.Context(), req1)
-		assert.NilError(t, err)
-		_ = deleted
-		req2 := &DeleteTensorboardRunRequest{}
-		req2.SetName(created.GetName())
-		_, err = fx.Service().DeleteTensorboardRun(fx.Context(), req2)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 
@@ -2541,22 +2493,6 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testDelete(t *
 		req := &DeleteTensorboardTimeSeriesRequest{}
 		req.SetName(fx.notFoundName(created.GetName()))
 		_, err := fx.Service().DeleteTensorboardTimeSeries(fx.Context(), req)
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		req1 := &DeleteTensorboardTimeSeriesRequest{}
-		req1.SetName(created.GetName())
-		deleted, err := fx.Service().DeleteTensorboardTimeSeries(fx.Context(), req1)
-		assert.NilError(t, err)
-		_ = deleted
-		req2 := &DeleteTensorboardTimeSeriesRequest{}
-		req2.SetName(created.GetName())
-		_, err = fx.Service().DeleteTensorboardTimeSeries(fx.Context(), req2)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 

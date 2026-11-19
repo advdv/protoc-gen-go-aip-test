@@ -512,22 +512,6 @@ func (fx *FeatureRegistryServiceFeatureTestSuiteConfig) testDelete(t *testing.T)
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		deleted, err := fx.Service().DeleteFeature(fx.Context(), &DeleteFeatureRequest{
-			Name: created.Name,
-		})
-		assert.NilError(t, err)
-		_ = deleted
-		_, err = fx.Service().DeleteFeature(fx.Context(), &DeleteFeatureRequest{
-			Name: created.Name,
-		})
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
 	// Method should fail with InvalidArgument if the provided name only contains wildcards ('-')
 	t.Run("only wildcards", func(t *testing.T) {
 		fx.maybeSkip(t)
@@ -1121,22 +1105,6 @@ func (fx *FeatureRegistryServiceFeatureGroupTestSuiteConfig) testDelete(t *testi
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteFeatureGroup(fx.Context(), &DeleteFeatureGroupRequest{
 			Name: fx.notFoundName(created.Name),
-		})
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		deleted, err := fx.Service().DeleteFeatureGroup(fx.Context(), &DeleteFeatureGroupRequest{
-			Name: created.Name,
-		})
-		assert.NilError(t, err)
-		_ = deleted
-		_, err = fx.Service().DeleteFeatureGroup(fx.Context(), &DeleteFeatureGroupRequest{
-			Name: created.Name,
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})

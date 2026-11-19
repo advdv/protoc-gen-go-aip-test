@@ -19,6 +19,7 @@ var alreadyDeleted = suite.Test{
 
 	OnlyIf: suite.OnlyIfs(
 		onlyif.HasMethod(aipreflect.MethodTypeDelete),
+		onlyif.MethodNotLRO(aipreflect.MethodTypeDelete),
 	),
 	Generate: func(f *protogen.GeneratedFile, scope suite.Scope, apiMode util.APIMode) error {
 		deleteMethod, _ := util.StandardMethod(scope.Service, scope.Resource, aipreflect.MethodTypeDelete)

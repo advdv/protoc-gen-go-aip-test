@@ -651,22 +651,6 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testDelete(t *testing.T) {
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		deleted, err := fx.Service().DeleteArtifact(fx.Context(), &DeleteArtifactRequest{
-			Name: created.Name,
-		})
-		assert.NilError(t, err)
-		_ = deleted
-		_, err = fx.Service().DeleteArtifact(fx.Context(), &DeleteArtifactRequest{
-			Name: created.Name,
-		})
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
 	// Method should fail with InvalidArgument if the provided name only contains wildcards ('-')
 	t.Run("only wildcards", func(t *testing.T) {
 		fx.maybeSkip(t)
@@ -1253,22 +1237,6 @@ func (fx *MetadataServiceContextTestSuiteConfig) testDelete(t *testing.T) {
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
 
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		deleted, err := fx.Service().DeleteContext(fx.Context(), &DeleteContextRequest{
-			Name: created.Name,
-		})
-		assert.NilError(t, err)
-		_ = deleted
-		_, err = fx.Service().DeleteContext(fx.Context(), &DeleteContextRequest{
-			Name: created.Name,
-		})
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
 	// Method should fail with InvalidArgument if the provided name only contains wildcards ('-')
 	t.Run("only wildcards", func(t *testing.T) {
 		fx.maybeSkip(t)
@@ -1851,22 +1819,6 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testDelete(t *testing.T) {
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteExecution(fx.Context(), &DeleteExecutionRequest{
 			Name: fx.notFoundName(created.Name),
-		})
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		deleted, err := fx.Service().DeleteExecution(fx.Context(), &DeleteExecutionRequest{
-			Name: created.Name,
-		})
-		assert.NilError(t, err)
-		_ = deleted
-		_, err = fx.Service().DeleteExecution(fx.Context(), &DeleteExecutionRequest{
-			Name: created.Name,
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
@@ -2690,22 +2642,6 @@ func (fx *MetadataServiceMetadataStoreTestSuiteConfig) testDelete(t *testing.T) 
 		created := fx.create(t, parent)
 		_, err := fx.Service().DeleteMetadataStore(fx.Context(), &DeleteMetadataStoreRequest{
 			Name: fx.notFoundName(created.Name),
-		})
-		assert.Equal(t, codes.NotFound, status.Code(err), err)
-	})
-
-	// Method should fail with NotFound if the resource was already deleted. This also applies to soft-deletion.
-	t.Run("already deleted", func(t *testing.T) {
-		fx.maybeSkip(t)
-		parent := fx.nextParent(t, false)
-		created := fx.create(t, parent)
-		deleted, err := fx.Service().DeleteMetadataStore(fx.Context(), &DeleteMetadataStoreRequest{
-			Name: created.Name,
-		})
-		assert.NilError(t, err)
-		_ = deleted
-		_, err = fx.Service().DeleteMetadataStore(fx.Context(), &DeleteMetadataStoreRequest{
-			Name: created.Name,
 		})
 		assert.Equal(t, codes.NotFound, status.Code(err), err)
 	})
