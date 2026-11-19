@@ -277,7 +277,8 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) testCreate(t *testing.T) 
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		msg, err := fx.Service().CreateBatchPredictionJob(fx.Context(), &CreateBatchPredictionJobRequest{
 			Parent:             parent,
 			BatchPredictionJob: fx.Create(parent),
@@ -1005,7 +1006,8 @@ func (fx *JobServiceCustomJobTestSuiteConfig) testCreate(t *testing.T) {
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		msg, err := fx.Service().CreateCustomJob(fx.Context(), &CreateCustomJobRequest{
 			Parent:    parent,
 			CustomJob: fx.Create(parent),
@@ -1585,7 +1587,8 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) testCreate(t *testing.T) {
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		msg, err := fx.Service().CreateDataLabelingJob(fx.Context(), &CreateDataLabelingJobRequest{
 			Parent:          parent,
 			DataLabelingJob: fx.Create(parent),
@@ -2137,7 +2140,8 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) testCreate(t *testin
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		msg, err := fx.Service().CreateHyperparameterTuningJob(fx.Context(), &CreateHyperparameterTuningJobRequest{
 			Parent:                  parent,
 			HyperparameterTuningJob: fx.Create(parent),
@@ -2801,7 +2805,8 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testCreate(t *t
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		msg, err := fx.Service().CreateModelDeploymentMonitoringJob(fx.Context(), &CreateModelDeploymentMonitoringJobRequest{
 			Parent:                       parent,
 			ModelDeploymentMonitoringJob: fx.Create(parent),
@@ -3599,7 +3604,8 @@ func (fx *JobServiceNasJobTestSuiteConfig) testCreate(t *testing.T) {
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		msg, err := fx.Service().CreateNasJob(fx.Context(), &CreateNasJobRequest{
 			Parent: parent,
 			NasJob: fx.Create(parent),

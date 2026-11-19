@@ -140,7 +140,8 @@ func (fx *VizierServiceStudyTestSuiteConfig) testCreate(t *testing.T) {
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		msg, err := fx.Service().CreateStudy(fx.Context(), &CreateStudyRequest{
 			Parent: parent,
 			Study:  fx.Create(parent),

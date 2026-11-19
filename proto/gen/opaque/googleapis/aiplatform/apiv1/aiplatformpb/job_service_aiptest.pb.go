@@ -277,7 +277,8 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) testCreate(t *testing.T) 
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		req := &CreateBatchPredictionJobRequest{}
 		req.SetParent(parent)
 		req.SetBatchPredictionJob(fx.Create(parent))
@@ -1005,7 +1006,8 @@ func (fx *JobServiceCustomJobTestSuiteConfig) testCreate(t *testing.T) {
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		req := &CreateCustomJobRequest{}
 		req.SetParent(parent)
 		req.SetCustomJob(fx.Create(parent))
@@ -1585,7 +1587,8 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) testCreate(t *testing.T) {
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		req := &CreateDataLabelingJobRequest{}
 		req.SetParent(parent)
 		req.SetDataLabelingJob(fx.Create(parent))
@@ -2137,7 +2140,8 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) testCreate(t *testin
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		req := &CreateHyperparameterTuningJobRequest{}
 		req.SetParent(parent)
 		req.SetHyperparameterTuningJob(fx.Create(parent))
@@ -2801,7 +2805,8 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testCreate(t *t
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		req := &CreateModelDeploymentMonitoringJobRequest{}
 		req.SetParent(parent)
 		req.SetModelDeploymentMonitoringJob(fx.Create(parent))
@@ -3599,7 +3604,8 @@ func (fx *JobServiceNasJobTestSuiteConfig) testCreate(t *testing.T) {
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		req := &CreateNasJobRequest{}
 		req.SetParent(parent)
 		req.SetNasJob(fx.Create(parent))

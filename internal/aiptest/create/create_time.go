@@ -27,7 +27,8 @@ var createTime = suite.Test{
 		if util.HasParent(scope.Resource) {
 			f.P("parent := ", ident.FixtureNextParent, "(t, false)")
 		}
-		f.P("beforeCreate := ", ident.TimeNow, "()")
+		f.P("// allow for the clock of the service to run up to a second behind the clock of the test")
+		f.P("beforeCreate := ", ident.TimeNow, "().Add(-", ident.TimeSecond, ")")
 		util.MethodCreate{
 			Resource: scope.Resource,
 			Method:   createMethod,

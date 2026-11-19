@@ -748,7 +748,8 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testCreate(t *
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		msg, err := fx.Service().CreateTensorboardExperiment(fx.Context(), &CreateTensorboardExperimentRequest{
 			Parent:                parent,
 			TensorboardExperiment: fx.Create(parent),
@@ -1291,7 +1292,8 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testCreate(t *testing
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		msg, err := fx.Service().CreateTensorboardRun(fx.Context(), &CreateTensorboardRunRequest{
 			Parent:         parent,
 			TensorboardRun: fx.Create(parent),
@@ -1899,7 +1901,8 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testCreate(t *
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		msg, err := fx.Service().CreateTensorboardTimeSeries(fx.Context(), &CreateTensorboardTimeSeriesRequest{
 			Parent:                parent,
 			TensorboardTimeSeries: fx.Create(parent),

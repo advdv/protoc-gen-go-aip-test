@@ -226,7 +226,8 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testCreate(t *testing.T) {
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		req := &CreateArtifactRequest{}
 		req.SetParent(parent)
 		req.SetArtifact(fx.Create(parent))
@@ -781,7 +782,8 @@ func (fx *MetadataServiceContextTestSuiteConfig) testCreate(t *testing.T) {
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		req := &CreateContextRequest{}
 		req.SetParent(parent)
 		req.SetContext(fx.Create(parent))
@@ -1336,7 +1338,8 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testCreate(t *testing.T) {
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		req := &CreateExecutionRequest{}
 		req.SetParent(parent)
 		req.SetExecution(fx.Create(parent))
@@ -1886,7 +1889,8 @@ func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) testCreate(t *testing.T)
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		req := &CreateMetadataSchemaRequest{}
 		req.SetParent(parent)
 		req.SetMetadataSchema(fx.Create(parent))

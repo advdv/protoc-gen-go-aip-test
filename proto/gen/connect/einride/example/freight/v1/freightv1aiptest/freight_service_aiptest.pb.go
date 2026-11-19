@@ -143,7 +143,8 @@ func (fx *FreightServiceShipperTestSuiteConfig) testCreate(t *testing.T) {
 	// Field create_time should be populated when the resource is created.
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		userSetID := ""
 		if fx.IDGenerator != nil {
 			userSetID = fx.IDGenerator()
@@ -747,7 +748,8 @@ func (fx *FreightServiceShipperTestSuiteConfig) testDelete(t *testing.T) {
 	t.Run("soft-deleted delete_time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		created := fx.create(t)
-		beforeDelete := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeDelete := time.Now().Add(-time.Second)
 		deleted, err := fx.Service().DeleteShipper(fx.Context(), &v1.DeleteShipperRequest{
 			Name: created.Name,
 		})
@@ -879,7 +881,8 @@ func (fx *FreightServiceSiteTestSuiteConfig) testCreate(t *testing.T) {
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		userSetID := ""
 		if fx.IDGenerator != nil {
 			userSetID = fx.IDGenerator()
@@ -1774,7 +1777,8 @@ func (fx *FreightServiceSiteTestSuiteConfig) testDelete(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
-		beforeDelete := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeDelete := time.Now().Add(-time.Second)
 		deleted, err := fx.Service().DeleteSite(fx.Context(), &v1.DeleteSiteRequest{
 			Name: created.Name,
 			Etag: created.Etag,

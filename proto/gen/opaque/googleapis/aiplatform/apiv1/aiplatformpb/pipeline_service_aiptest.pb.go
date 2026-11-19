@@ -140,7 +140,8 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) testCreate(t *testing.T) {
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		req := &CreatePipelineJobRequest{}
 		req.SetParent(parent)
 		req.SetPipelineJob(fx.Create(parent))
@@ -612,7 +613,8 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) testCreate(t *testing.
 	t.Run("create time", func(t *testing.T) {
 		fx.maybeSkip(t)
 		parent := fx.nextParent(t, false)
-		beforeCreate := time.Now()
+		// allow for the clock of the service to run up to a second behind the clock of the test
+		beforeCreate := time.Now().Add(-time.Second)
 		req := &CreateTrainingPipelineRequest{}
 		req.SetParent(parent)
 		req.SetTrainingPipeline(fx.Create(parent))

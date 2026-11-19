@@ -30,7 +30,8 @@ var softDeletedDeleteTime = suite.Test{
 		} else {
 			f.P("created := fx.create(t)")
 		}
-		f.P("beforeDelete := ", ident.TimeNow, "()")
+		f.P("// allow for the clock of the service to run up to a second behind the clock of the test")
+		f.P("beforeDelete := ", ident.TimeNow, "().Add(-", ident.TimeSecond, ")")
 		util.MethodDelete{
 			Resource:    scope.Resource,
 			Method:      deleteMethod,
