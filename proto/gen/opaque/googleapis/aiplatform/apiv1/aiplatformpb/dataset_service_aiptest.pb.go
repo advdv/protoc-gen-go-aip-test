@@ -212,6 +212,11 @@ type DatasetServiceAnnotationTestSuiteConfig struct {
 	// This method is generated because service does not expose a Create
 	// method (or it does not comply with AIP).
 	CreateResource func(ctx context.Context, parent string) (*Annotation, error)
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Annotation)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -275,8 +280,8 @@ func (fx *DatasetServiceAnnotationTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetAnnotations(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetAnnotations()),
 				cmpopts.SortSlices(func(a, b *Annotation) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -327,8 +332,8 @@ func (fx *DatasetServiceAnnotationTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Annotation) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -377,6 +382,26 @@ func (fx *DatasetServiceAnnotationTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *DatasetServiceAnnotationTestSuiteConfig) normalize(msg *Annotation) *Annotation {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Annotation)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *DatasetServiceAnnotationTestSuiteConfig) normalizeAll(msgs []*Annotation) []*Annotation {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Annotation, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *DatasetServiceAnnotationTestSuiteConfig) create(t *testing.T, parent string) *Annotation {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -412,6 +437,11 @@ type DatasetServiceAnnotationSpecTestSuiteConfig struct {
 	// This method is generated because service does not expose a Create
 	// method (or it does not comply with AIP).
 	CreateResource func(ctx context.Context, parent string) (*AnnotationSpec, error)
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*AnnotationSpec)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -452,7 +482,7 @@ func (fx *DatasetServiceAnnotationSpecTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetAnnotationSpec(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -503,6 +533,26 @@ func (fx *DatasetServiceAnnotationSpecTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *DatasetServiceAnnotationSpecTestSuiteConfig) normalize(msg *AnnotationSpec) *AnnotationSpec {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*AnnotationSpec)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *DatasetServiceAnnotationSpecTestSuiteConfig) normalizeAll(msgs []*AnnotationSpec) []*AnnotationSpec {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*AnnotationSpec, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *DatasetServiceAnnotationSpecTestSuiteConfig) create(t *testing.T, parent string) *AnnotationSpec {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -538,6 +588,11 @@ type DatasetServiceDataItemTestSuiteConfig struct {
 	// This method is generated because service does not expose a Create
 	// method (or it does not comply with AIP).
 	CreateResource func(ctx context.Context, parent string) (*DataItem, error)
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*DataItem)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -601,8 +656,8 @@ func (fx *DatasetServiceDataItemTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetDataItems(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetDataItems()),
 				cmpopts.SortSlices(func(a, b *DataItem) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -653,8 +708,8 @@ func (fx *DatasetServiceDataItemTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *DataItem) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -703,6 +758,26 @@ func (fx *DatasetServiceDataItemTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *DatasetServiceDataItemTestSuiteConfig) normalize(msg *DataItem) *DataItem {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*DataItem)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *DatasetServiceDataItemTestSuiteConfig) normalizeAll(msgs []*DataItem) []*DataItem {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*DataItem, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *DatasetServiceDataItemTestSuiteConfig) create(t *testing.T, parent string) *DataItem {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -738,6 +813,11 @@ type DatasetServiceDatasetTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Dataset
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Dataset)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -876,7 +956,7 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetDataset(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -940,7 +1020,7 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) testUpdate(t *testing.T) {
 		getReq.SetName(updated.GetName())
 		persisted, err := fx.Service().GetDataset(fx.Context(), getReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, updated, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The field create_time should be preserved when a '*'-update mask is used.
@@ -1155,8 +1235,8 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetDatasets(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetDatasets()),
 				cmpopts.SortSlices(func(a, b *Dataset) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1207,8 +1287,8 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Dataset) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1254,8 +1334,8 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetDatasets(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetDatasets()),
 				cmpopts.SortSlices(func(a, b *Dataset) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1361,6 +1441,26 @@ func (fx *DatasetServiceDatasetTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *DatasetServiceDatasetTestSuiteConfig) normalize(msg *Dataset) *Dataset {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Dataset)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *DatasetServiceDatasetTestSuiteConfig) normalizeAll(msgs []*Dataset) []*Dataset {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Dataset, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *DatasetServiceDatasetTestSuiteConfig) create(t *testing.T, parent string) *Dataset {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -1389,6 +1489,11 @@ type DatasetServiceDatasetVersionTestSuiteConfig struct {
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *DatasetVersion
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*DatasetVersion)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -1456,7 +1561,7 @@ func (fx *DatasetServiceDatasetVersionTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetDatasetVersion(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -1533,8 +1638,8 @@ func (fx *DatasetServiceDatasetVersionTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetDatasetVersions(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetDatasetVersions()),
 				cmpopts.SortSlices(func(a, b *DatasetVersion) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1585,8 +1690,8 @@ func (fx *DatasetServiceDatasetVersionTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *DatasetVersion) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1632,8 +1737,8 @@ func (fx *DatasetServiceDatasetVersionTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetDatasetVersions(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetDatasetVersions()),
 				cmpopts.SortSlices(func(a, b *DatasetVersion) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1739,6 +1844,26 @@ func (fx *DatasetServiceDatasetVersionTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *DatasetServiceDatasetVersionTestSuiteConfig) normalize(msg *DatasetVersion) *DatasetVersion {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*DatasetVersion)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *DatasetServiceDatasetVersionTestSuiteConfig) normalizeAll(msgs []*DatasetVersion) []*DatasetVersion {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*DatasetVersion, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *DatasetServiceDatasetVersionTestSuiteConfig) create(t *testing.T, parent string) *DatasetVersion {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -1770,6 +1895,11 @@ type DatasetServiceSavedQueryTestSuiteConfig struct {
 	// This method is generated because service does not expose a Create
 	// method (or it does not comply with AIP).
 	CreateResource func(ctx context.Context, parent string) (*SavedQuery, error)
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*SavedQuery)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -1834,8 +1964,8 @@ func (fx *DatasetServiceSavedQueryTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetSavedQueries(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetSavedQueries()),
 				cmpopts.SortSlices(func(a, b *SavedQuery) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1886,8 +2016,8 @@ func (fx *DatasetServiceSavedQueryTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *SavedQuery) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1933,8 +2063,8 @@ func (fx *DatasetServiceSavedQueryTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetSavedQueries(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetSavedQueries()),
 				cmpopts.SortSlices(func(a, b *SavedQuery) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -2038,6 +2168,26 @@ func (fx *DatasetServiceSavedQueryTestSuiteConfig) maybeSkip(t *testing.T) {
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *DatasetServiceSavedQueryTestSuiteConfig) normalize(msg *SavedQuery) *SavedQuery {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*SavedQuery)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *DatasetServiceSavedQueryTestSuiteConfig) normalizeAll(msgs []*SavedQuery) []*SavedQuery {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*SavedQuery, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *DatasetServiceSavedQueryTestSuiteConfig) create(t *testing.T, parent string) *SavedQuery {

@@ -38,7 +38,16 @@ var persisted = suite.Test{
 			Name:     util.FieldGet("msg", "Name", apiMode),
 		}.Generate(f, "createReq", "persisted", "err", ":=", apiMode)
 		f.P(ident.AssertNilError, "(t, err)")
-		f.P(ident.AssertDeepEqual, "(t, msg, persisted, ", ident.ProtocmpTransform, "())")
+		f.P(
+			ident.AssertDeepEqual,
+			"(t, ",
+			ident.FixtureNormalize,
+			"(msg), ",
+			ident.FixtureNormalize,
+			"(persisted), ",
+			ident.ProtocmpTransform,
+			"())",
+		)
 		return nil
 	},
 }

@@ -43,12 +43,12 @@ var duplicateNames = suite.Test{
 		f.P(ident.AssertNilError, "(t, err)")
 		f.P(ident.AssertDeepEqual, "(")
 		f.P("t,")
-		f.P("[]*", scope.Message.GoIdent, "{")
+		f.P(ident.FixtureNormalizeAll, "([]*", scope.Message.GoIdent, "{")
 		for _, name := range names {
 			f.P(name + ",")
 		}
-		f.P("},")
-		f.P(util.FieldGet("response", responseResources, apiMode), ",")
+		f.P("}),")
+		f.P(ident.FixtureNormalizeAll, "(", util.FieldGet("response", responseResources, apiMode), "),")
 		f.P(ident.ProtocmpTransform, "(),")
 		f.P(")")
 		return nil

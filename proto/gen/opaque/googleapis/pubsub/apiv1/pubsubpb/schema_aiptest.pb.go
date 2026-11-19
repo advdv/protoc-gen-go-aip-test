@@ -7,6 +7,7 @@ import (
 	cmpopts "github.com/google/go-cmp/cmp/cmpopts"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	assert "gotest.tools/v3/assert"
 	strings "strings"
@@ -72,6 +73,11 @@ type SchemaServiceSchemaTestSuiteConfig struct {
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Schema
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Schema)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -121,7 +127,7 @@ func (fx *SchemaServiceSchemaTestSuiteConfig) testCreate(t *testing.T) {
 		createReq.SetName(msg.GetName())
 		persisted, err := fx.Service().GetSchema(fx.Context(), createReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The method should fail with InvalidArgument if the resource has any
@@ -177,7 +183,7 @@ func (fx *SchemaServiceSchemaTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetSchema(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -254,8 +260,8 @@ func (fx *SchemaServiceSchemaTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetSchemas(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetSchemas()),
 				cmpopts.SortSlices(func(a, b *Schema) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -306,8 +312,8 @@ func (fx *SchemaServiceSchemaTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Schema) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -353,8 +359,8 @@ func (fx *SchemaServiceSchemaTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetSchemas(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetSchemas()),
 				cmpopts.SortSlices(func(a, b *Schema) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -458,6 +464,26 @@ func (fx *SchemaServiceSchemaTestSuiteConfig) maybeSkip(t *testing.T) {
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *SchemaServiceSchemaTestSuiteConfig) normalize(msg *Schema) *Schema {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Schema)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *SchemaServiceSchemaTestSuiteConfig) normalizeAll(msgs []*Schema) []*Schema {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Schema, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *SchemaServiceSchemaTestSuiteConfig) create(t *testing.T, parent string) *Schema {

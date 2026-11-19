@@ -131,6 +131,11 @@ type FeaturestoreServiceEntityTypeTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *EntityType
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*EntityType)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -199,7 +204,7 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -263,7 +268,7 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) testUpdate(t *testing.T)
 			Name: updated.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, updated, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// Method should fail with Aborted if the supplied etag doesnt match the current etag value.
@@ -378,8 +383,8 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.EntityTypes,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.EntityTypes),
 				cmpopts.SortSlices(func(a, b *EntityType) bool {
 					return a.Name < b.Name
 				}),
@@ -430,8 +435,8 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *EntityType) bool {
 					return a.Name < b.Name
 				}),
@@ -477,8 +482,8 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.EntityTypes,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.EntityTypes),
 				cmpopts.SortSlices(func(a, b *EntityType) bool {
 					return a.Name < b.Name
 				}),
@@ -584,6 +589,26 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) maybeSkip(t *testing.T) 
 	}
 }
 
+func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) normalize(msg *EntityType) *EntityType {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*EntityType)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) normalizeAll(msgs []*EntityType) []*EntityType {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*EntityType, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) create(t *testing.T, parent string) *EntityType {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -622,6 +647,11 @@ type FeaturestoreServiceFeatureTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Feature
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Feature)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -700,7 +730,7 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -764,7 +794,7 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) testUpdate(t *testing.T) {
 			Name: updated.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, updated, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// Method should fail with Aborted if the supplied etag doesnt match the current etag value.
@@ -879,8 +909,8 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.Features,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.Features),
 				cmpopts.SortSlices(func(a, b *Feature) bool {
 					return a.Name < b.Name
 				}),
@@ -931,8 +961,8 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Feature) bool {
 					return a.Name < b.Name
 				}),
@@ -978,8 +1008,8 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.Features,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.Features),
 				cmpopts.SortSlices(func(a, b *Feature) bool {
 					return a.Name < b.Name
 				}),
@@ -1085,6 +1115,26 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *FeaturestoreServiceFeatureTestSuiteConfig) normalize(msg *Feature) *Feature {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Feature)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *FeaturestoreServiceFeatureTestSuiteConfig) normalizeAll(msgs []*Feature) []*Feature {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Feature, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *FeaturestoreServiceFeatureTestSuiteConfig) create(t *testing.T, parent string) *Feature {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -1127,6 +1177,11 @@ type FeaturestoreServiceFeaturestoreTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Featurestore
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Featurestore)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -1233,7 +1288,7 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) testGet(t *testing.T) 
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -1438,8 +1493,8 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) testList(t *testing.T)
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.Featurestores,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.Featurestores),
 				cmpopts.SortSlices(func(a, b *Featurestore) bool {
 					return a.Name < b.Name
 				}),
@@ -1490,8 +1545,8 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) testList(t *testing.T)
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Featurestore) bool {
 					return a.Name < b.Name
 				}),
@@ -1537,8 +1592,8 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) testList(t *testing.T)
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.Featurestores,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.Featurestores),
 				cmpopts.SortSlices(func(a, b *Featurestore) bool {
 					return a.Name < b.Name
 				}),
@@ -1642,6 +1697,26 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) maybeSkip(t *testing.T
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) normalize(msg *Featurestore) *Featurestore {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Featurestore)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) normalizeAll(msgs []*Featurestore) []*Featurestore {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Featurestore, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) create(t *testing.T, parent string) *Featurestore {

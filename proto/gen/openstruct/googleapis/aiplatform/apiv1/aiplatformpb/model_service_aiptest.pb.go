@@ -134,6 +134,11 @@ type ModelServiceModelTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Model
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Model)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -177,7 +182,7 @@ func (fx *ModelServiceModelTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -241,7 +246,7 @@ func (fx *ModelServiceModelTestSuiteConfig) testUpdate(t *testing.T) {
 			Name: updated.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, updated, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The field create_time should be preserved when a '*'-update mask is used.
@@ -551,8 +556,8 @@ func (fx *ModelServiceModelTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.Models,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.Models),
 				cmpopts.SortSlices(func(a, b *Model) bool {
 					return a.Name < b.Name
 				}),
@@ -603,8 +608,8 @@ func (fx *ModelServiceModelTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Model) bool {
 					return a.Name < b.Name
 				}),
@@ -650,8 +655,8 @@ func (fx *ModelServiceModelTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.Models,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.Models),
 				cmpopts.SortSlices(func(a, b *Model) bool {
 					return a.Name < b.Name
 				}),
@@ -757,6 +762,26 @@ func (fx *ModelServiceModelTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *ModelServiceModelTestSuiteConfig) normalize(msg *Model) *Model {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Model)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *ModelServiceModelTestSuiteConfig) normalizeAll(msgs []*Model) []*Model {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Model, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *ModelServiceModelTestSuiteConfig) create(t *testing.T, parent string) *Model {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -792,6 +817,11 @@ type ModelServiceModelEvaluationTestSuiteConfig struct {
 	// This method is generated because service does not expose a Create
 	// method (or it does not comply with AIP).
 	CreateResource func(ctx context.Context, parent string) (*ModelEvaluation, error)
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*ModelEvaluation)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -833,7 +863,7 @@ func (fx *ModelServiceModelEvaluationTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -910,8 +940,8 @@ func (fx *ModelServiceModelEvaluationTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.ModelEvaluations,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.ModelEvaluations),
 				cmpopts.SortSlices(func(a, b *ModelEvaluation) bool {
 					return a.Name < b.Name
 				}),
@@ -962,8 +992,8 @@ func (fx *ModelServiceModelEvaluationTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *ModelEvaluation) bool {
 					return a.Name < b.Name
 				}),
@@ -1012,6 +1042,26 @@ func (fx *ModelServiceModelEvaluationTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *ModelServiceModelEvaluationTestSuiteConfig) normalize(msg *ModelEvaluation) *ModelEvaluation {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*ModelEvaluation)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *ModelServiceModelEvaluationTestSuiteConfig) normalizeAll(msgs []*ModelEvaluation) []*ModelEvaluation {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*ModelEvaluation, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *ModelServiceModelEvaluationTestSuiteConfig) create(t *testing.T, parent string) *ModelEvaluation {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -1047,6 +1097,11 @@ type ModelServiceModelEvaluationSliceTestSuiteConfig struct {
 	// This method is generated because service does not expose a Create
 	// method (or it does not comply with AIP).
 	CreateResource func(ctx context.Context, parent string) (*ModelEvaluationSlice, error)
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*ModelEvaluationSlice)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -1088,7 +1143,7 @@ func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) testGet(t *testing.T)
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -1165,8 +1220,8 @@ func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) testList(t *testing.T
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.ModelEvaluationSlices,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.ModelEvaluationSlices),
 				cmpopts.SortSlices(func(a, b *ModelEvaluationSlice) bool {
 					return a.Name < b.Name
 				}),
@@ -1217,8 +1272,8 @@ func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) testList(t *testing.T
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *ModelEvaluationSlice) bool {
 					return a.Name < b.Name
 				}),
@@ -1265,6 +1320,26 @@ func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) maybeSkip(t *testing.
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) normalize(msg *ModelEvaluationSlice) *ModelEvaluationSlice {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*ModelEvaluationSlice)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) normalizeAll(msgs []*ModelEvaluationSlice) []*ModelEvaluationSlice {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*ModelEvaluationSlice, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *ModelServiceModelEvaluationSliceTestSuiteConfig) create(t *testing.T, parent string) *ModelEvaluationSlice {

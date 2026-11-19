@@ -131,6 +131,11 @@ type FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *FeatureOnlineStore
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*FeatureOnlineStore)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -253,7 +258,7 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) testG
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -477,8 +482,8 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) testL
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.FeatureOnlineStores,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.FeatureOnlineStores),
 				cmpopts.SortSlices(func(a, b *FeatureOnlineStore) bool {
 					return a.Name < b.Name
 				}),
@@ -529,8 +534,8 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) testL
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *FeatureOnlineStore) bool {
 					return a.Name < b.Name
 				}),
@@ -576,8 +581,8 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) testL
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.FeatureOnlineStores,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.FeatureOnlineStores),
 				cmpopts.SortSlices(func(a, b *FeatureOnlineStore) bool {
 					return a.Name < b.Name
 				}),
@@ -683,6 +688,26 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) maybe
 	}
 }
 
+func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) normalize(msg *FeatureOnlineStore) *FeatureOnlineStore {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*FeatureOnlineStore)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) normalizeAll(msgs []*FeatureOnlineStore) []*FeatureOnlineStore {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*FeatureOnlineStore, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) create(t *testing.T, parent string) *FeatureOnlineStore {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -714,6 +739,11 @@ type FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *FeatureView
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*FeatureView)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -836,7 +866,7 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) testGet(t *t
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -1060,8 +1090,8 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) testList(t *
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.FeatureViews,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.FeatureViews),
 				cmpopts.SortSlices(func(a, b *FeatureView) bool {
 					return a.Name < b.Name
 				}),
@@ -1112,8 +1142,8 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) testList(t *
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *FeatureView) bool {
 					return a.Name < b.Name
 				}),
@@ -1159,8 +1189,8 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) testList(t *
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.FeatureViews,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.FeatureViews),
 				cmpopts.SortSlices(func(a, b *FeatureView) bool {
 					return a.Name < b.Name
 				}),
@@ -1266,6 +1296,26 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) maybeSkip(t 
 	}
 }
 
+func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) normalize(msg *FeatureView) *FeatureView {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*FeatureView)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) normalizeAll(msgs []*FeatureView) []*FeatureView {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*FeatureView, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) create(t *testing.T, parent string) *FeatureView {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -1297,6 +1347,11 @@ type FeatureOnlineStoreAdminServiceFeatureViewSyncTestSuiteConfig struct {
 	// This method is generated because service does not expose a Create
 	// method (or it does not comply with AIP).
 	CreateResource func(ctx context.Context, parent string) (*FeatureViewSync, error)
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*FeatureViewSync)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -1338,7 +1393,7 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewSyncTestSuiteConfig) testGet(
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -1415,8 +1470,8 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewSyncTestSuiteConfig) testList
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.FeatureViewSyncs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.FeatureViewSyncs),
 				cmpopts.SortSlices(func(a, b *FeatureViewSync) bool {
 					return a.Name < b.Name
 				}),
@@ -1467,8 +1522,8 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewSyncTestSuiteConfig) testList
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *FeatureViewSync) bool {
 					return a.Name < b.Name
 				}),
@@ -1515,6 +1570,26 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewSyncTestSuiteConfig) maybeSki
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *FeatureOnlineStoreAdminServiceFeatureViewSyncTestSuiteConfig) normalize(msg *FeatureViewSync) *FeatureViewSync {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*FeatureViewSync)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *FeatureOnlineStoreAdminServiceFeatureViewSyncTestSuiteConfig) normalizeAll(msgs []*FeatureViewSync) []*FeatureViewSync {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*FeatureViewSync, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *FeatureOnlineStoreAdminServiceFeatureViewSyncTestSuiteConfig) create(t *testing.T, parent string) *FeatureViewSync {

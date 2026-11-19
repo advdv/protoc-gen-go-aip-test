@@ -131,6 +131,11 @@ type DatabaseAdminBackupTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Backup
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Backup)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -220,7 +225,7 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -284,7 +289,7 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) testUpdate(t *testing.T) {
 			Name: updated.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, updated, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	{
@@ -370,8 +375,8 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.Backups,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.Backups),
 				cmpopts.SortSlices(func(a, b *Backup) bool {
 					return a.Name < b.Name
 				}),
@@ -422,8 +427,8 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Backup) bool {
 					return a.Name < b.Name
 				}),
@@ -469,8 +474,8 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.Backups,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.Backups),
 				cmpopts.SortSlices(func(a, b *Backup) bool {
 					return a.Name < b.Name
 				}),
@@ -576,6 +581,26 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *DatabaseAdminBackupTestSuiteConfig) normalize(msg *Backup) *Backup {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Backup)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *DatabaseAdminBackupTestSuiteConfig) normalizeAll(msgs []*Backup) []*Backup {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Backup, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *DatabaseAdminBackupTestSuiteConfig) create(t *testing.T, parent string) *Backup {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -610,6 +635,11 @@ type DatabaseAdminDatabaseTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Database
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Database)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -652,7 +682,7 @@ func (fx *DatabaseAdminDatabaseTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -811,8 +841,8 @@ func (fx *DatabaseAdminDatabaseTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.Databases,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.Databases),
 				cmpopts.SortSlices(func(a, b *Database) bool {
 					return a.Name < b.Name
 				}),
@@ -863,8 +893,8 @@ func (fx *DatabaseAdminDatabaseTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Database) bool {
 					return a.Name < b.Name
 				}),
@@ -913,6 +943,26 @@ func (fx *DatabaseAdminDatabaseTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *DatabaseAdminDatabaseTestSuiteConfig) normalize(msg *Database) *Database {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Database)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *DatabaseAdminDatabaseTestSuiteConfig) normalizeAll(msgs []*Database) []*Database {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Database, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *DatabaseAdminDatabaseTestSuiteConfig) create(t *testing.T, parent string) *Database {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -948,6 +998,11 @@ type DatabaseAdminDatabaseRoleTestSuiteConfig struct {
 	// This method is generated because service does not expose a Create
 	// method (or it does not comply with AIP).
 	CreateResource func(ctx context.Context, parent string) (*DatabaseRole, error)
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*DatabaseRole)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -1011,8 +1066,8 @@ func (fx *DatabaseAdminDatabaseRoleTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.DatabaseRoles,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.DatabaseRoles),
 				cmpopts.SortSlices(func(a, b *DatabaseRole) bool {
 					return a.Name < b.Name
 				}),
@@ -1063,8 +1118,8 @@ func (fx *DatabaseAdminDatabaseRoleTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *DatabaseRole) bool {
 					return a.Name < b.Name
 				}),
@@ -1111,6 +1166,26 @@ func (fx *DatabaseAdminDatabaseRoleTestSuiteConfig) maybeSkip(t *testing.T) {
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *DatabaseAdminDatabaseRoleTestSuiteConfig) normalize(msg *DatabaseRole) *DatabaseRole {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*DatabaseRole)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *DatabaseAdminDatabaseRoleTestSuiteConfig) normalizeAll(msgs []*DatabaseRole) []*DatabaseRole {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*DatabaseRole, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *DatabaseAdminDatabaseRoleTestSuiteConfig) create(t *testing.T, parent string) *DatabaseRole {

@@ -7,6 +7,7 @@ import (
 	cmpopts "github.com/google/go-cmp/cmp/cmpopts"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	assert "gotest.tools/v3/assert"
 	strings "strings"
@@ -100,6 +101,11 @@ type PipelineServicePipelineJobTestSuiteConfig struct {
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *PipelineJob
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*PipelineJob)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -165,7 +171,7 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) testCreate(t *testing.T) {
 			Name: msg.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The method should fail with InvalidArgument if the resource has any
@@ -258,7 +264,7 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -335,8 +341,8 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.PipelineJobs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.PipelineJobs),
 				cmpopts.SortSlices(func(a, b *PipelineJob) bool {
 					return a.Name < b.Name
 				}),
@@ -387,8 +393,8 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *PipelineJob) bool {
 					return a.Name < b.Name
 				}),
@@ -434,8 +440,8 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.PipelineJobs,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.PipelineJobs),
 				cmpopts.SortSlices(func(a, b *PipelineJob) bool {
 					return a.Name < b.Name
 				}),
@@ -541,6 +547,26 @@ func (fx *PipelineServicePipelineJobTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *PipelineServicePipelineJobTestSuiteConfig) normalize(msg *PipelineJob) *PipelineJob {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*PipelineJob)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *PipelineServicePipelineJobTestSuiteConfig) normalizeAll(msgs []*PipelineJob) []*PipelineJob {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*PipelineJob, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *PipelineServicePipelineJobTestSuiteConfig) create(t *testing.T, parent string) *PipelineJob {
 	t.Helper()
 	created, err := fx.Service().CreatePipelineJob(fx.Context(), &CreatePipelineJobRequest{
@@ -573,6 +599,11 @@ type PipelineServiceTrainingPipelineTestSuiteConfig struct {
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *TrainingPipeline
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*TrainingPipeline)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -638,7 +669,7 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) testCreate(t *testing.
 			Name: msg.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The method should fail with InvalidArgument if the resource has any
@@ -1051,7 +1082,7 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) testGet(t *testing.T) 
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -1128,8 +1159,8 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) testList(t *testing.T)
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.TrainingPipelines,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.TrainingPipelines),
 				cmpopts.SortSlices(func(a, b *TrainingPipeline) bool {
 					return a.Name < b.Name
 				}),
@@ -1180,8 +1211,8 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) testList(t *testing.T)
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *TrainingPipeline) bool {
 					return a.Name < b.Name
 				}),
@@ -1227,8 +1258,8 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) testList(t *testing.T)
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.TrainingPipelines,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.TrainingPipelines),
 				cmpopts.SortSlices(func(a, b *TrainingPipeline) bool {
 					return a.Name < b.Name
 				}),
@@ -1332,6 +1363,26 @@ func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) maybeSkip(t *testing.T
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) normalize(msg *TrainingPipeline) *TrainingPipeline {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*TrainingPipeline)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) normalizeAll(msgs []*TrainingPipeline) []*TrainingPipeline {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*TrainingPipeline, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *PipelineServiceTrainingPipelineTestSuiteConfig) create(t *testing.T, parent string) *TrainingPipeline {

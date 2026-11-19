@@ -237,6 +237,11 @@ type JobServiceBatchPredictionJobTestSuiteConfig struct {
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *BatchPredictionJob
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*BatchPredictionJob)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -302,7 +307,7 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) testCreate(t *testing.T) 
 			Name: msg.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The method should fail with InvalidArgument if the resource has any
@@ -651,7 +656,7 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -728,8 +733,8 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.BatchPredictionJobs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.BatchPredictionJobs),
 				cmpopts.SortSlices(func(a, b *BatchPredictionJob) bool {
 					return a.Name < b.Name
 				}),
@@ -780,8 +785,8 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *BatchPredictionJob) bool {
 					return a.Name < b.Name
 				}),
@@ -827,8 +832,8 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.BatchPredictionJobs,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.BatchPredictionJobs),
 				cmpopts.SortSlices(func(a, b *BatchPredictionJob) bool {
 					return a.Name < b.Name
 				}),
@@ -934,6 +939,26 @@ func (fx *JobServiceBatchPredictionJobTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *JobServiceBatchPredictionJobTestSuiteConfig) normalize(msg *BatchPredictionJob) *BatchPredictionJob {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*BatchPredictionJob)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *JobServiceBatchPredictionJobTestSuiteConfig) normalizeAll(msgs []*BatchPredictionJob) []*BatchPredictionJob {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*BatchPredictionJob, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *JobServiceBatchPredictionJobTestSuiteConfig) create(t *testing.T, parent string) *BatchPredictionJob {
 	t.Helper()
 	created, err := fx.Service().CreateBatchPredictionJob(fx.Context(), &CreateBatchPredictionJobRequest{
@@ -966,6 +991,11 @@ type JobServiceCustomJobTestSuiteConfig struct {
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *CustomJob
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*CustomJob)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -1031,7 +1061,7 @@ func (fx *JobServiceCustomJobTestSuiteConfig) testCreate(t *testing.T) {
 			Name: msg.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The method should fail with InvalidArgument if the resource has any
@@ -1232,7 +1262,7 @@ func (fx *JobServiceCustomJobTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -1309,8 +1339,8 @@ func (fx *JobServiceCustomJobTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.CustomJobs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.CustomJobs),
 				cmpopts.SortSlices(func(a, b *CustomJob) bool {
 					return a.Name < b.Name
 				}),
@@ -1361,8 +1391,8 @@ func (fx *JobServiceCustomJobTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *CustomJob) bool {
 					return a.Name < b.Name
 				}),
@@ -1408,8 +1438,8 @@ func (fx *JobServiceCustomJobTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.CustomJobs,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.CustomJobs),
 				cmpopts.SortSlices(func(a, b *CustomJob) bool {
 					return a.Name < b.Name
 				}),
@@ -1515,6 +1545,26 @@ func (fx *JobServiceCustomJobTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *JobServiceCustomJobTestSuiteConfig) normalize(msg *CustomJob) *CustomJob {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*CustomJob)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *JobServiceCustomJobTestSuiteConfig) normalizeAll(msgs []*CustomJob) []*CustomJob {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*CustomJob, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *JobServiceCustomJobTestSuiteConfig) create(t *testing.T, parent string) *CustomJob {
 	t.Helper()
 	created, err := fx.Service().CreateCustomJob(fx.Context(), &CreateCustomJobRequest{
@@ -1547,6 +1597,11 @@ type JobServiceDataLabelingJobTestSuiteConfig struct {
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *DataLabelingJob
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*DataLabelingJob)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -1612,7 +1667,7 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) testCreate(t *testing.T) {
 			Name: msg.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The method should fail with InvalidArgument if the resource has any
@@ -1785,7 +1840,7 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -1862,8 +1917,8 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.DataLabelingJobs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.DataLabelingJobs),
 				cmpopts.SortSlices(func(a, b *DataLabelingJob) bool {
 					return a.Name < b.Name
 				}),
@@ -1914,8 +1969,8 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *DataLabelingJob) bool {
 					return a.Name < b.Name
 				}),
@@ -1961,8 +2016,8 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.DataLabelingJobs,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.DataLabelingJobs),
 				cmpopts.SortSlices(func(a, b *DataLabelingJob) bool {
 					return a.Name < b.Name
 				}),
@@ -2068,6 +2123,26 @@ func (fx *JobServiceDataLabelingJobTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *JobServiceDataLabelingJobTestSuiteConfig) normalize(msg *DataLabelingJob) *DataLabelingJob {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*DataLabelingJob)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *JobServiceDataLabelingJobTestSuiteConfig) normalizeAll(msgs []*DataLabelingJob) []*DataLabelingJob {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*DataLabelingJob, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *JobServiceDataLabelingJobTestSuiteConfig) create(t *testing.T, parent string) *DataLabelingJob {
 	t.Helper()
 	created, err := fx.Service().CreateDataLabelingJob(fx.Context(), &CreateDataLabelingJobRequest{
@@ -2100,6 +2175,11 @@ type JobServiceHyperparameterTuningJobTestSuiteConfig struct {
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *HyperparameterTuningJob
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*HyperparameterTuningJob)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -2165,7 +2245,7 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) testCreate(t *testin
 			Name: msg.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The method should fail with InvalidArgument if the resource has any
@@ -2446,7 +2526,7 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) testGet(t *testing.T
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -2523,8 +2603,8 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) testList(t *testing.
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.HyperparameterTuningJobs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.HyperparameterTuningJobs),
 				cmpopts.SortSlices(func(a, b *HyperparameterTuningJob) bool {
 					return a.Name < b.Name
 				}),
@@ -2575,8 +2655,8 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) testList(t *testing.
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *HyperparameterTuningJob) bool {
 					return a.Name < b.Name
 				}),
@@ -2622,8 +2702,8 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) testList(t *testing.
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.HyperparameterTuningJobs,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.HyperparameterTuningJobs),
 				cmpopts.SortSlices(func(a, b *HyperparameterTuningJob) bool {
 					return a.Name < b.Name
 				}),
@@ -2729,6 +2809,26 @@ func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) maybeSkip(t *testing
 	}
 }
 
+func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) normalize(msg *HyperparameterTuningJob) *HyperparameterTuningJob {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*HyperparameterTuningJob)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) normalizeAll(msgs []*HyperparameterTuningJob) []*HyperparameterTuningJob {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*HyperparameterTuningJob, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *JobServiceHyperparameterTuningJobTestSuiteConfig) create(t *testing.T, parent string) *HyperparameterTuningJob {
 	t.Helper()
 	created, err := fx.Service().CreateHyperparameterTuningJob(fx.Context(), &CreateHyperparameterTuningJobRequest{
@@ -2764,6 +2864,11 @@ type JobServiceModelDeploymentMonitoringJobTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *ModelDeploymentMonitoringJob
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*ModelDeploymentMonitoringJob)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -2830,7 +2935,7 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testCreate(t *t
 			Name: msg.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The method should fail with InvalidArgument if the resource has any
@@ -3034,7 +3139,7 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testGet(t *test
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -3326,8 +3431,8 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testList(t *tes
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.ModelDeploymentMonitoringJobs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.ModelDeploymentMonitoringJobs),
 				cmpopts.SortSlices(func(a, b *ModelDeploymentMonitoringJob) bool {
 					return a.Name < b.Name
 				}),
@@ -3378,8 +3483,8 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testList(t *tes
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *ModelDeploymentMonitoringJob) bool {
 					return a.Name < b.Name
 				}),
@@ -3425,8 +3530,8 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testList(t *tes
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.ModelDeploymentMonitoringJobs,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.ModelDeploymentMonitoringJobs),
 				cmpopts.SortSlices(func(a, b *ModelDeploymentMonitoringJob) bool {
 					return a.Name < b.Name
 				}),
@@ -3532,6 +3637,26 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) maybeSkip(t *te
 	}
 }
 
+func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) normalize(msg *ModelDeploymentMonitoringJob) *ModelDeploymentMonitoringJob {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*ModelDeploymentMonitoringJob)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) normalizeAll(msgs []*ModelDeploymentMonitoringJob) []*ModelDeploymentMonitoringJob {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*ModelDeploymentMonitoringJob, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) create(t *testing.T, parent string) *ModelDeploymentMonitoringJob {
 	t.Helper()
 	created, err := fx.Service().CreateModelDeploymentMonitoringJob(fx.Context(), &CreateModelDeploymentMonitoringJobRequest{
@@ -3564,6 +3689,11 @@ type JobServiceNasJobTestSuiteConfig struct {
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *NasJob
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*NasJob)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -3629,7 +3759,7 @@ func (fx *JobServiceNasJobTestSuiteConfig) testCreate(t *testing.T) {
 			Name: msg.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The method should fail with InvalidArgument if the resource has any
@@ -3974,7 +4104,7 @@ func (fx *JobServiceNasJobTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -4051,8 +4181,8 @@ func (fx *JobServiceNasJobTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.NasJobs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.NasJobs),
 				cmpopts.SortSlices(func(a, b *NasJob) bool {
 					return a.Name < b.Name
 				}),
@@ -4103,8 +4233,8 @@ func (fx *JobServiceNasJobTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *NasJob) bool {
 					return a.Name < b.Name
 				}),
@@ -4150,8 +4280,8 @@ func (fx *JobServiceNasJobTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.NasJobs,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.NasJobs),
 				cmpopts.SortSlices(func(a, b *NasJob) bool {
 					return a.Name < b.Name
 				}),
@@ -4257,6 +4387,26 @@ func (fx *JobServiceNasJobTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *JobServiceNasJobTestSuiteConfig) normalize(msg *NasJob) *NasJob {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*NasJob)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *JobServiceNasJobTestSuiteConfig) normalizeAll(msgs []*NasJob) []*NasJob {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*NasJob, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *JobServiceNasJobTestSuiteConfig) create(t *testing.T, parent string) *NasJob {
 	t.Helper()
 	created, err := fx.Service().CreateNasJob(fx.Context(), &CreateNasJobRequest{
@@ -4292,6 +4442,11 @@ type JobServiceNasTrialDetailTestSuiteConfig struct {
 	// This method is generated because service does not expose a Create
 	// method (or it does not comply with AIP).
 	CreateResource func(ctx context.Context, parent string) (*NasTrialDetail, error)
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*NasTrialDetail)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -4333,7 +4488,7 @@ func (fx *JobServiceNasTrialDetailTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -4410,8 +4565,8 @@ func (fx *JobServiceNasTrialDetailTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.NasTrialDetails,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.NasTrialDetails),
 				cmpopts.SortSlices(func(a, b *NasTrialDetail) bool {
 					return a.Name < b.Name
 				}),
@@ -4462,8 +4617,8 @@ func (fx *JobServiceNasTrialDetailTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *NasTrialDetail) bool {
 					return a.Name < b.Name
 				}),
@@ -4510,6 +4665,26 @@ func (fx *JobServiceNasTrialDetailTestSuiteConfig) maybeSkip(t *testing.T) {
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *JobServiceNasTrialDetailTestSuiteConfig) normalize(msg *NasTrialDetail) *NasTrialDetail {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*NasTrialDetail)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *JobServiceNasTrialDetailTestSuiteConfig) normalizeAll(msgs []*NasTrialDetail) []*NasTrialDetail {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*NasTrialDetail, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *JobServiceNasTrialDetailTestSuiteConfig) create(t *testing.T, parent string) *NasTrialDetail {

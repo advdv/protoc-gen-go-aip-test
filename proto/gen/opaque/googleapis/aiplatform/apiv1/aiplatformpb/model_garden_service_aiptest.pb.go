@@ -6,6 +6,7 @@ import (
 	context "context"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	assert "gotest.tools/v3/assert"
 	strings "strings"
@@ -74,6 +75,11 @@ type ModelGardenServicePublisherModelTestSuiteConfig struct {
 	// This method is generated because service does not expose a Create
 	// method (or it does not comply with AIP).
 	CreateResource func(ctx context.Context, parent string) (*PublisherModel, error)
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*PublisherModel)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -114,7 +120,7 @@ func (fx *ModelGardenServicePublisherModelTestSuiteConfig) testGet(t *testing.T)
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetPublisherModel(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -163,6 +169,26 @@ func (fx *ModelGardenServicePublisherModelTestSuiteConfig) maybeSkip(t *testing.
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *ModelGardenServicePublisherModelTestSuiteConfig) normalize(msg *PublisherModel) *PublisherModel {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*PublisherModel)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *ModelGardenServicePublisherModelTestSuiteConfig) normalizeAll(msgs []*PublisherModel) []*PublisherModel {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*PublisherModel, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *ModelGardenServicePublisherModelTestSuiteConfig) create(t *testing.T, parent string) *PublisherModel {

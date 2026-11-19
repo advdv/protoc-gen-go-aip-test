@@ -78,6 +78,11 @@ type PublisherTopicTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Topic
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Topic)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -292,6 +297,26 @@ func (fx *PublisherTopicTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *PublisherTopicTestSuiteConfig) normalize(msg *Topic) *Topic {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Topic)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *PublisherTopicTestSuiteConfig) normalizeAll(msgs []*Topic) []*Topic {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Topic, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *PublisherTopicTestSuiteConfig) create(t *testing.T, parent string) *Topic {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -399,6 +424,11 @@ type SubscriberSnapshotTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Snapshot
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Snapshot)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -493,6 +523,26 @@ func (fx *SubscriberSnapshotTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *SubscriberSnapshotTestSuiteConfig) normalize(msg *Snapshot) *Snapshot {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Snapshot)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *SubscriberSnapshotTestSuiteConfig) normalizeAll(msgs []*Snapshot) []*Snapshot {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Snapshot, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *SubscriberSnapshotTestSuiteConfig) create(t *testing.T, parent string) *Snapshot {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -531,6 +581,11 @@ type SubscriberSubscriptionTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Subscription
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Subscription)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -686,6 +741,26 @@ func (fx *SubscriberSubscriptionTestSuiteConfig) maybeSkip(t *testing.T) {
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *SubscriberSubscriptionTestSuiteConfig) normalize(msg *Subscription) *Subscription {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Subscription)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *SubscriberSubscriptionTestSuiteConfig) normalizeAll(msgs []*Subscription) []*Subscription {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Subscription, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *SubscriberSubscriptionTestSuiteConfig) create(t *testing.T, parent string) *Subscription {

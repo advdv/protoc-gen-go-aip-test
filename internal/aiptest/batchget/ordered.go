@@ -41,9 +41,13 @@ var ordered = suite.Test{
 		f.P(ident.AssertNilError, "(t, err)")
 		f.P(
 			ident.AssertDeepEqual,
-			"(t, order, ",
+			"(t, ",
+			ident.FixtureNormalizeAll,
+			"(order), ",
+			ident.FixtureNormalizeAll,
+			"(",
 			util.FieldGet("response", responseResources, apiMode),
-			",",
+			"),",
 			ident.ProtocmpTransform,
 			"())",
 		)

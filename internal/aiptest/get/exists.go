@@ -35,7 +35,16 @@ var exists = suite.Test{
 			Name: util.FieldGet("created", "Name", apiMode),
 		}.Generate(f, "req", "msg", "err", ":=", apiMode)
 		f.P(ident.AssertNilError, "(t, err)")
-		f.P(ident.AssertDeepEqual, "(t, msg, created, ", ident.ProtocmpTransform, "())")
+		f.P(
+			ident.AssertDeepEqual,
+			"(t, ",
+			ident.FixtureNormalize,
+			"(msg), ",
+			ident.FixtureNormalize,
+			"(created), ",
+			ident.ProtocmpTransform,
+			"())",
+		)
 		return nil
 	},
 }

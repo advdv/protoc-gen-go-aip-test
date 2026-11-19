@@ -107,6 +107,11 @@ type FreightServiceShipperTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func() *Shipper
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Shipper)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -169,7 +174,7 @@ func (fx *FreightServiceShipperTestSuiteConfig) testCreate(t *testing.T) {
 			Name: msg.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// If method support user settable IDs, when set the resource should
@@ -424,7 +429,7 @@ func (fx *FreightServiceShipperTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -458,7 +463,7 @@ func (fx *FreightServiceShipperTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, deleted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(deleted), protocmp.Transform())
 	})
 
 }
@@ -510,7 +515,7 @@ func (fx *FreightServiceShipperTestSuiteConfig) testUpdate(t *testing.T) {
 			Name: updated.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, updated, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The field create_time should be preserved when a '*'-update mask is used.
@@ -751,6 +756,26 @@ func (fx *FreightServiceShipperTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *FreightServiceShipperTestSuiteConfig) normalize(msg *Shipper) *Shipper {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Shipper)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *FreightServiceShipperTestSuiteConfig) normalizeAll(msgs []*Shipper) []*Shipper {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Shipper, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *FreightServiceShipperTestSuiteConfig) create(t *testing.T) *Shipper {
 	t.Helper()
 	userSetID := ""
@@ -813,6 +838,11 @@ type FreightServiceSiteTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Site
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Site)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -900,7 +930,7 @@ func (fx *FreightServiceSiteTestSuiteConfig) testCreate(t *testing.T) {
 			Name: msg.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// If method support user settable IDs, when set the resource should
@@ -1135,7 +1165,7 @@ func (fx *FreightServiceSiteTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -1172,7 +1202,7 @@ func (fx *FreightServiceSiteTestSuiteConfig) testGet(t *testing.T) {
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, deleted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(deleted), protocmp.Transform())
 	})
 
 }
@@ -1245,12 +1275,12 @@ func (fx *FreightServiceSiteTestSuiteConfig) testBatchGet(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				[]*Site{
+				fx.normalizeAll([]*Site{
 					created00,
 					created01,
 					created02,
-				},
-				response.Sites,
+				}),
+				fx.normalizeAll(response.Sites),
 				protocmp.Transform(),
 			)
 		})
@@ -1300,7 +1330,7 @@ func (fx *FreightServiceSiteTestSuiteConfig) testBatchGet(t *testing.T) {
 					},
 				})
 				assert.NilError(t, err)
-				assert.DeepEqual(t, order, response.Sites, protocmp.Transform())
+				assert.DeepEqual(t, fx.normalizeAll(order), fx.normalizeAll(response.Sites), protocmp.Transform())
 			}
 		})
 
@@ -1318,11 +1348,11 @@ func (fx *FreightServiceSiteTestSuiteConfig) testBatchGet(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				[]*Site{
+				fx.normalizeAll([]*Site{
 					created00,
 					created00,
-				},
-				response.Sites,
+				}),
+				fx.normalizeAll(response.Sites),
 				protocmp.Transform(),
 			)
 		})
@@ -1381,7 +1411,7 @@ func (fx *FreightServiceSiteTestSuiteConfig) testUpdate(t *testing.T) {
 			Name: updated.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, updated, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The field create_time should be preserved when a '*'-update mask is used.
@@ -1558,8 +1588,8 @@ func (fx *FreightServiceSiteTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.Sites,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.Sites),
 				cmpopts.SortSlices(func(a, b *Site) bool {
 					return a.Name < b.Name
 				}),
@@ -1610,8 +1640,8 @@ func (fx *FreightServiceSiteTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Site) bool {
 					return a.Name < b.Name
 				}),
@@ -1658,8 +1688,8 @@ func (fx *FreightServiceSiteTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.Sites,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.Sites),
 				cmpopts.SortSlices(func(a, b *Site) bool {
 					return a.Name < b.Name
 				}),
@@ -1797,6 +1827,26 @@ func (fx *FreightServiceSiteTestSuiteConfig) maybeSkip(t *testing.T) {
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *FreightServiceSiteTestSuiteConfig) normalize(msg *Site) *Site {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Site)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *FreightServiceSiteTestSuiteConfig) normalizeAll(msgs []*Site) []*Site {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Site, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *FreightServiceSiteTestSuiteConfig) create(t *testing.T, parent string) *Site {

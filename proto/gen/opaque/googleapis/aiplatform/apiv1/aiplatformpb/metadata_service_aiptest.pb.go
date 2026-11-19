@@ -7,6 +7,7 @@ import (
 	cmpopts "github.com/google/go-cmp/cmp/cmpopts"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -185,6 +186,11 @@ type MetadataServiceArtifactTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Artifact
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Artifact)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -251,7 +257,7 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testCreate(t *testing.T) {
 		createReq.SetName(msg.GetName())
 		persisted, err := fx.Service().GetArtifact(fx.Context(), createReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// Field etag should be populated when the resource is created.
@@ -297,7 +303,7 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetArtifact(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -373,7 +379,7 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testUpdate(t *testing.T) {
 		getReq.SetName(updated.GetName())
 		persisted, err := fx.Service().GetArtifact(fx.Context(), getReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, updated, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// Method should fail with Aborted if the supplied etag doesnt match the current etag value.
@@ -488,8 +494,8 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetArtifacts(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetArtifacts()),
 				cmpopts.SortSlices(func(a, b *Artifact) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -540,8 +546,8 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Artifact) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -587,8 +593,8 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetArtifacts(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetArtifacts()),
 				cmpopts.SortSlices(func(a, b *Artifact) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -706,6 +712,26 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *MetadataServiceArtifactTestSuiteConfig) normalize(msg *Artifact) *Artifact {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Artifact)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *MetadataServiceArtifactTestSuiteConfig) normalizeAll(msgs []*Artifact) []*Artifact {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Artifact, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *MetadataServiceArtifactTestSuiteConfig) create(t *testing.T, parent string) *Artifact {
 	t.Helper()
 	req := &CreateArtifactRequest{}
@@ -741,6 +767,11 @@ type MetadataServiceContextTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Context
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Context)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -807,7 +838,7 @@ func (fx *MetadataServiceContextTestSuiteConfig) testCreate(t *testing.T) {
 		createReq.SetName(msg.GetName())
 		persisted, err := fx.Service().GetContext(fx.Context(), createReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// Field etag should be populated when the resource is created.
@@ -853,7 +884,7 @@ func (fx *MetadataServiceContextTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetContext(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -929,7 +960,7 @@ func (fx *MetadataServiceContextTestSuiteConfig) testUpdate(t *testing.T) {
 		getReq.SetName(updated.GetName())
 		persisted, err := fx.Service().GetContext(fx.Context(), getReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, updated, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// Method should fail with Aborted if the supplied etag doesnt match the current etag value.
@@ -1044,8 +1075,8 @@ func (fx *MetadataServiceContextTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetContexts(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetContexts()),
 				cmpopts.SortSlices(func(a, b *Context) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1096,8 +1127,8 @@ func (fx *MetadataServiceContextTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Context) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1143,8 +1174,8 @@ func (fx *MetadataServiceContextTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetContexts(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetContexts()),
 				cmpopts.SortSlices(func(a, b *Context) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1262,6 +1293,26 @@ func (fx *MetadataServiceContextTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *MetadataServiceContextTestSuiteConfig) normalize(msg *Context) *Context {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Context)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *MetadataServiceContextTestSuiteConfig) normalizeAll(msgs []*Context) []*Context {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Context, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *MetadataServiceContextTestSuiteConfig) create(t *testing.T, parent string) *Context {
 	t.Helper()
 	req := &CreateContextRequest{}
@@ -1297,6 +1348,11 @@ type MetadataServiceExecutionTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Execution
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Execution)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -1363,7 +1419,7 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testCreate(t *testing.T) {
 		createReq.SetName(msg.GetName())
 		persisted, err := fx.Service().GetExecution(fx.Context(), createReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// Field etag should be populated when the resource is created.
@@ -1409,7 +1465,7 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetExecution(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -1485,7 +1541,7 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testUpdate(t *testing.T) {
 		getReq.SetName(updated.GetName())
 		persisted, err := fx.Service().GetExecution(fx.Context(), getReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, updated, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// Method should fail with Aborted if the supplied etag doesnt match the current etag value.
@@ -1600,8 +1656,8 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetExecutions(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetExecutions()),
 				cmpopts.SortSlices(func(a, b *Execution) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1652,8 +1708,8 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Execution) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1699,8 +1755,8 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetExecutions(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetExecutions()),
 				cmpopts.SortSlices(func(a, b *Execution) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1818,6 +1874,26 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *MetadataServiceExecutionTestSuiteConfig) normalize(msg *Execution) *Execution {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Execution)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *MetadataServiceExecutionTestSuiteConfig) normalizeAll(msgs []*Execution) []*Execution {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Execution, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *MetadataServiceExecutionTestSuiteConfig) create(t *testing.T, parent string) *Execution {
 	t.Helper()
 	req := &CreateExecutionRequest{}
@@ -1850,6 +1926,11 @@ type MetadataServiceMetadataSchemaTestSuiteConfig struct {
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *MetadataSchema
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*MetadataSchema)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -1914,7 +1995,7 @@ func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) testCreate(t *testing.T)
 		createReq.SetName(msg.GetName())
 		persisted, err := fx.Service().GetMetadataSchema(fx.Context(), createReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The method should fail with InvalidArgument if the resource has any
@@ -1970,7 +2051,7 @@ func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetMetadataSchema(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -2047,8 +2128,8 @@ func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetMetadataSchemas(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetMetadataSchemas()),
 				cmpopts.SortSlices(func(a, b *MetadataSchema) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -2099,8 +2180,8 @@ func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *MetadataSchema) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -2149,6 +2230,26 @@ func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) maybeSkip(t *testing.T) 
 	}
 }
 
+func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) normalize(msg *MetadataSchema) *MetadataSchema {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*MetadataSchema)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) normalizeAll(msgs []*MetadataSchema) []*MetadataSchema {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*MetadataSchema, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *MetadataServiceMetadataSchemaTestSuiteConfig) create(t *testing.T, parent string) *MetadataSchema {
 	t.Helper()
 	req := &CreateMetadataSchemaRequest{}
@@ -2181,6 +2282,11 @@ type MetadataServiceMetadataStoreTestSuiteConfig struct {
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *MetadataStore
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*MetadataStore)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -2270,7 +2376,7 @@ func (fx *MetadataServiceMetadataStoreTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetMetadataStore(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -2347,8 +2453,8 @@ func (fx *MetadataServiceMetadataStoreTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetMetadataStores(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetMetadataStores()),
 				cmpopts.SortSlices(func(a, b *MetadataStore) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -2399,8 +2505,8 @@ func (fx *MetadataServiceMetadataStoreTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *MetadataStore) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -2446,8 +2552,8 @@ func (fx *MetadataServiceMetadataStoreTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetMetadataStores(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetMetadataStores()),
 				cmpopts.SortSlices(func(a, b *MetadataStore) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -2551,6 +2657,26 @@ func (fx *MetadataServiceMetadataStoreTestSuiteConfig) maybeSkip(t *testing.T) {
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *MetadataServiceMetadataStoreTestSuiteConfig) normalize(msg *MetadataStore) *MetadataStore {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*MetadataStore)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *MetadataServiceMetadataStoreTestSuiteConfig) normalizeAll(msgs []*MetadataStore) []*MetadataStore {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*MetadataStore, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *MetadataServiceMetadataStoreTestSuiteConfig) create(t *testing.T, parent string) *MetadataStore {

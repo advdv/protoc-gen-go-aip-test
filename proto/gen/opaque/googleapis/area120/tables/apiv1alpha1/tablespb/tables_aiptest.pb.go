@@ -7,6 +7,7 @@ import (
 	cmpopts "github.com/google/go-cmp/cmp/cmpopts"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -130,6 +131,11 @@ type TablesServiceRowTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Row
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Row)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -180,7 +186,7 @@ func (fx *TablesServiceRowTestSuiteConfig) testCreate(t *testing.T) {
 		createReq.SetName(msg.GetName())
 		persisted, err := fx.Service().GetRow(fx.Context(), createReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 }
@@ -214,7 +220,7 @@ func (fx *TablesServiceRowTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetRow(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -278,7 +284,7 @@ func (fx *TablesServiceRowTestSuiteConfig) testUpdate(t *testing.T) {
 		getReq.SetName(updated.GetName())
 		persisted, err := fx.Service().GetRow(fx.Context(), getReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, updated, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	{
@@ -364,8 +370,8 @@ func (fx *TablesServiceRowTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetRows(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetRows()),
 				cmpopts.SortSlices(func(a, b *Row) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -416,8 +422,8 @@ func (fx *TablesServiceRowTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Row) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -463,8 +469,8 @@ func (fx *TablesServiceRowTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetRows(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetRows()),
 				cmpopts.SortSlices(func(a, b *Row) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -570,6 +576,26 @@ func (fx *TablesServiceRowTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *TablesServiceRowTestSuiteConfig) normalize(msg *Row) *Row {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Row)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *TablesServiceRowTestSuiteConfig) normalizeAll(msgs []*Row) []*Row {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Row, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *TablesServiceRowTestSuiteConfig) create(t *testing.T, parent string) *Row {
 	t.Helper()
 	req := &CreateRowRequest{}
@@ -600,6 +626,11 @@ type TablesServiceTableTestSuiteConfig struct {
 	// This method is generated because service does not expose a Create
 	// method (or it does not comply with AIP).
 	CreateResource func(ctx context.Context) (*Table, error)
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Table)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -640,7 +671,7 @@ func (fx *TablesServiceTableTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetTable(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -694,6 +725,26 @@ func (fx *TablesServiceTableTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *TablesServiceTableTestSuiteConfig) normalize(msg *Table) *Table {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Table)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *TablesServiceTableTestSuiteConfig) normalizeAll(msgs []*Table) []*Table {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Table, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *TablesServiceTableTestSuiteConfig) create(t *testing.T) *Table {
 	t.Helper()
 	if fx.CreateResource == nil {
@@ -724,6 +775,11 @@ type TablesServiceWorkspaceTestSuiteConfig struct {
 	// This method is generated because service does not expose a Create
 	// method (or it does not comply with AIP).
 	CreateResource func(ctx context.Context) (*Workspace, error)
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Workspace)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -764,7 +820,7 @@ func (fx *TablesServiceWorkspaceTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetWorkspace(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -816,6 +872,26 @@ func (fx *TablesServiceWorkspaceTestSuiteConfig) maybeSkip(t *testing.T) {
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *TablesServiceWorkspaceTestSuiteConfig) normalize(msg *Workspace) *Workspace {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Workspace)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *TablesServiceWorkspaceTestSuiteConfig) normalizeAll(msgs []*Workspace) []*Workspace {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Workspace, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *TablesServiceWorkspaceTestSuiteConfig) create(t *testing.T) *Workspace {

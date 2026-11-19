@@ -159,6 +159,11 @@ type TensorboardServiceTensorboardTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Tensorboard
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Tensorboard)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -265,7 +270,7 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetTensorboard(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -470,8 +475,8 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetTensorboards(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetTensorboards()),
 				cmpopts.SortSlices(func(a, b *Tensorboard) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -522,8 +527,8 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Tensorboard) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -569,8 +574,8 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetTensorboards(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetTensorboards()),
 				cmpopts.SortSlices(func(a, b *Tensorboard) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -676,6 +681,26 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) maybeSkip(t *testing.T) 
 	}
 }
 
+func (fx *TensorboardServiceTensorboardTestSuiteConfig) normalize(msg *Tensorboard) *Tensorboard {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Tensorboard)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *TensorboardServiceTensorboardTestSuiteConfig) normalizeAll(msgs []*Tensorboard) []*Tensorboard {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Tensorboard, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *TensorboardServiceTensorboardTestSuiteConfig) create(t *testing.T, parent string) *Tensorboard {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -707,6 +732,11 @@ type TensorboardServiceTensorboardExperimentTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *TensorboardExperiment
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*TensorboardExperiment)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -773,7 +803,7 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testCreate(t *
 		createReq.SetName(msg.GetName())
 		persisted, err := fx.Service().GetTensorboardExperiment(fx.Context(), createReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// Field etag should be populated when the resource is created.
@@ -819,7 +849,7 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testGet(t *tes
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetTensorboardExperiment(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -895,7 +925,7 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testUpdate(t *
 		getReq.SetName(updated.GetName())
 		persisted, err := fx.Service().GetTensorboardExperiment(fx.Context(), getReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, updated, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// Method should fail with Aborted if the supplied etag doesnt match the current etag value.
@@ -1010,8 +1040,8 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testList(t *te
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetTensorboardExperiments(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetTensorboardExperiments()),
 				cmpopts.SortSlices(func(a, b *TensorboardExperiment) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1062,8 +1092,8 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testList(t *te
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *TensorboardExperiment) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1109,8 +1139,8 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testList(t *te
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetTensorboardExperiments(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetTensorboardExperiments()),
 				cmpopts.SortSlices(func(a, b *TensorboardExperiment) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1216,6 +1246,26 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) maybeSkip(t *t
 	}
 }
 
+func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) normalize(msg *TensorboardExperiment) *TensorboardExperiment {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*TensorboardExperiment)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) normalizeAll(msgs []*TensorboardExperiment) []*TensorboardExperiment {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*TensorboardExperiment, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) create(t *testing.T, parent string) *TensorboardExperiment {
 	t.Helper()
 	req := &CreateTensorboardExperimentRequest{}
@@ -1251,6 +1301,11 @@ type TensorboardServiceTensorboardRunTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *TensorboardRun
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*TensorboardRun)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -1317,7 +1372,7 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testCreate(t *testing
 		createReq.SetName(msg.GetName())
 		persisted, err := fx.Service().GetTensorboardRun(fx.Context(), createReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The method should fail with InvalidArgument if the resource has any
@@ -1385,7 +1440,7 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testGet(t *testing.T)
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetTensorboardRun(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -1461,7 +1516,7 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testUpdate(t *testing
 		getReq.SetName(updated.GetName())
 		persisted, err := fx.Service().GetTensorboardRun(fx.Context(), getReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, updated, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The field create_time should be preserved when a '*'-update mask is used.
@@ -1619,8 +1674,8 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testList(t *testing.T
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetTensorboardRuns(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetTensorboardRuns()),
 				cmpopts.SortSlices(func(a, b *TensorboardRun) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1671,8 +1726,8 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testList(t *testing.T
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *TensorboardRun) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1718,8 +1773,8 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testList(t *testing.T
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetTensorboardRuns(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetTensorboardRuns()),
 				cmpopts.SortSlices(func(a, b *TensorboardRun) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1825,6 +1880,26 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) maybeSkip(t *testing.
 	}
 }
 
+func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) normalize(msg *TensorboardRun) *TensorboardRun {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*TensorboardRun)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) normalizeAll(msgs []*TensorboardRun) []*TensorboardRun {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*TensorboardRun, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) create(t *testing.T, parent string) *TensorboardRun {
 	t.Helper()
 	req := &CreateTensorboardRunRequest{}
@@ -1860,6 +1935,11 @@ type TensorboardServiceTensorboardTimeSeriesTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *TensorboardTimeSeries
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*TensorboardTimeSeries)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -1926,7 +2006,7 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testCreate(t *
 		createReq.SetName(msg.GetName())
 		persisted, err := fx.Service().GetTensorboardTimeSeries(fx.Context(), createReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The method should fail with InvalidArgument if the resource has any
@@ -2010,7 +2090,7 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testGet(t *tes
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetTensorboardTimeSeries(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -2086,7 +2166,7 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testUpdate(t *
 		getReq.SetName(updated.GetName())
 		persisted, err := fx.Service().GetTensorboardTimeSeries(fx.Context(), getReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, updated, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The field create_time should be preserved when a '*'-update mask is used.
@@ -2244,8 +2324,8 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testList(t *te
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetTensorboardTimeSeries(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetTensorboardTimeSeries()),
 				cmpopts.SortSlices(func(a, b *TensorboardTimeSeries) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -2296,8 +2376,8 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testList(t *te
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *TensorboardTimeSeries) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -2343,8 +2423,8 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testList(t *te
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetTensorboardTimeSeries(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetTensorboardTimeSeries()),
 				cmpopts.SortSlices(func(a, b *TensorboardTimeSeries) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -2448,6 +2528,26 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) maybeSkip(t *t
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) normalize(msg *TensorboardTimeSeries) *TensorboardTimeSeries {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*TensorboardTimeSeries)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) normalizeAll(msgs []*TensorboardTimeSeries) []*TensorboardTimeSeries {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*TensorboardTimeSeries, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) create(t *testing.T, parent string) *TensorboardTimeSeries {

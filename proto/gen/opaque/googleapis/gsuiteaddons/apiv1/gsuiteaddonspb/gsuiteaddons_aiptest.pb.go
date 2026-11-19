@@ -7,6 +7,7 @@ import (
 	cmpopts "github.com/google/go-cmp/cmp/cmpopts"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	assert "gotest.tools/v3/assert"
 	strings "strings"
@@ -124,6 +125,11 @@ type GSuiteAddOnsAuthorizationTestSuiteConfig struct {
 	// This method is generated because service does not expose a Create
 	// method (or it does not comply with AIP).
 	CreateResource func(ctx context.Context) (*Authorization, error)
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Authorization)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -163,7 +169,7 @@ func (fx *GSuiteAddOnsAuthorizationTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetAuthorization(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with InvalidArgument if the provided name only contains wildcards ('-')
@@ -183,6 +189,26 @@ func (fx *GSuiteAddOnsAuthorizationTestSuiteConfig) maybeSkip(t *testing.T) {
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *GSuiteAddOnsAuthorizationTestSuiteConfig) normalize(msg *Authorization) *Authorization {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Authorization)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *GSuiteAddOnsAuthorizationTestSuiteConfig) normalizeAll(msgs []*Authorization) []*Authorization {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Authorization, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *GSuiteAddOnsAuthorizationTestSuiteConfig) create(t *testing.T) *Authorization {
@@ -217,6 +243,11 @@ type GSuiteAddOnsDeploymentTestSuiteConfig struct {
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *Deployment
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Deployment)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -266,7 +297,7 @@ func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) testCreate(t *testing.T) {
 		createReq.SetName(msg.GetName())
 		persisted, err := fx.Service().GetDeployment(fx.Context(), createReq)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, persisted, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(persisted), protocmp.Transform())
 	})
 
 	// The method should fail with InvalidArgument if the resource has any
@@ -382,7 +413,7 @@ func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetDeployment(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -459,8 +490,8 @@ func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetDeployments(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetDeployments()),
 				cmpopts.SortSlices(func(a, b *Deployment) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -511,8 +542,8 @@ func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Deployment) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -558,8 +589,8 @@ func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetDeployments(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetDeployments()),
 				cmpopts.SortSlices(func(a, b *Deployment) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -677,6 +708,26 @@ func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) normalize(msg *Deployment) *Deployment {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Deployment)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) normalizeAll(msgs []*Deployment) []*Deployment {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Deployment, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *GSuiteAddOnsDeploymentTestSuiteConfig) create(t *testing.T, parent string) *Deployment {
 	t.Helper()
 	req := &CreateDeploymentRequest{}
@@ -712,6 +763,11 @@ type GSuiteAddOnsInstallStatusTestSuiteConfig struct {
 	// This method is generated because service does not expose a Create
 	// method (or it does not comply with AIP).
 	CreateResource func(ctx context.Context, parent string) (*InstallStatus, error)
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*InstallStatus)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -752,7 +808,7 @@ func (fx *GSuiteAddOnsInstallStatusTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetInstallStatus(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with InvalidArgument if the provided name only contains wildcards ('-')
@@ -790,6 +846,26 @@ func (fx *GSuiteAddOnsInstallStatusTestSuiteConfig) maybeSkip(t *testing.T) {
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *GSuiteAddOnsInstallStatusTestSuiteConfig) normalize(msg *InstallStatus) *InstallStatus {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*InstallStatus)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *GSuiteAddOnsInstallStatusTestSuiteConfig) normalizeAll(msgs []*InstallStatus) []*InstallStatus {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*InstallStatus, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *GSuiteAddOnsInstallStatusTestSuiteConfig) create(t *testing.T, parent string) *InstallStatus {

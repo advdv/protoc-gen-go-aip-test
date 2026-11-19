@@ -3,6 +3,11 @@ package ident
 const (
 	FixtureNextParent = "fx.nextParent"
 	FixtureMaybeSkip  = "fx.maybeSkip"
+	// FixtureNormalize returns a copy of a resource that the config's Normalize has changed,
+	// or the resource itself when Normalize is nil, for the tests to compare.
+	FixtureNormalize = "fx.normalize"
+	// FixtureNormalizeAll is FixtureNormalize for each resource of a slice.
+	FixtureNormalizeAll = "fx.normalizeAll"
 	// FixtureNotFoundName returns the name of a resource that does not exist,
 	// next to the resource with the name it is passed.
 	FixtureNotFoundName = "fx.notFoundName"

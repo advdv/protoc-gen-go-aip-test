@@ -77,6 +77,11 @@ type IndexServiceIndexTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Index
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Index)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -183,7 +188,7 @@ func (fx *IndexServiceIndexTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetIndex(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -388,8 +393,8 @@ func (fx *IndexServiceIndexTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetIndexes(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetIndexes()),
 				cmpopts.SortSlices(func(a, b *Index) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -440,8 +445,8 @@ func (fx *IndexServiceIndexTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Index) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -487,8 +492,8 @@ func (fx *IndexServiceIndexTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetIndexes(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetIndexes()),
 				cmpopts.SortSlices(func(a, b *Index) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -592,6 +597,26 @@ func (fx *IndexServiceIndexTestSuiteConfig) maybeSkip(t *testing.T) {
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *IndexServiceIndexTestSuiteConfig) normalize(msg *Index) *Index {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Index)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *IndexServiceIndexTestSuiteConfig) normalizeAll(msgs []*Index) []*Index {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Index, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *IndexServiceIndexTestSuiteConfig) create(t *testing.T, parent string) *Index {

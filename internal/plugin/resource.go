@@ -27,6 +27,7 @@ func (r *resourceGenerator) Generate(f *protogen.GeneratedFile) error {
 	}
 	r.generateParentMethods(f)
 	r.generateSkip(f)
+	r.generateNormalize(f)
 	r.generateCreate(f)
 	r.generateUserSettableID(f)
 	r.generateNotFoundName(f)
@@ -99,6 +100,11 @@ func (r *resourceGenerator) generateFixture(f *protogen.GeneratedFile) {
 		}
 	}
 
+	f.P("// Normalize, if non-nil, changes a copy of each resource before a test compares it")
+	f.P("// with another, such as to clear a field that the service returns from one method only.")
+	f.P("// Clear only fields that differ between calls by design: what Normalize clears, no")
+	f.P("// test compares.")
+	f.P("Normalize func(*", r.message.GoIdent, ")")
 	f.P("// Patterns of tests to skip.")
 	f.P("// For example if a service has a Get method:")
 	f.P("// Skip: [\"Get\"] will skip all tests for Get.")
@@ -340,4 +346,28 @@ func (r *resourceGenerator) generateNotFoundName(f *protogen.GeneratedFile) {
 	f.P("// appending to the resource name ensures it is valid")
 	f.P("return name + \"notfound\"")
 	f.P("}")
+}
+
+func (r *resourceGenerator) generateNormalize(f *protogen.GeneratedFile) {
+	fixtureName := resourceTestSuiteConfigName(r.service.Desc, r.resource)
+	f.P("func (fx *", fixtureName, ") normalize(msg *", r.message.GoIdent, ") *", r.message.GoIdent, " {")
+	f.P("if fx.Normalize == nil || msg == nil {")
+	f.P("return msg")
+	f.P("}")
+	f.P("normalized := ", ident.ProtoClone, "(msg).(*", r.message.GoIdent, ")")
+	f.P("fx.Normalize(normalized)")
+	f.P("return normalized")
+	f.P("}")
+	f.P()
+	f.P("func (fx *", fixtureName, ") normalizeAll(msgs []*", r.message.GoIdent, ") []*", r.message.GoIdent, " {")
+	f.P("if fx.Normalize == nil {")
+	f.P("return msgs")
+	f.P("}")
+	f.P("normalized := make([]*", r.message.GoIdent, ", len(msgs))")
+	f.P("for i, msg := range msgs {")
+	f.P("normalized[i] = fx.normalize(msg)")
+	f.P("}")
+	f.P("return normalized")
+	f.P("}")
+	f.P()
 }

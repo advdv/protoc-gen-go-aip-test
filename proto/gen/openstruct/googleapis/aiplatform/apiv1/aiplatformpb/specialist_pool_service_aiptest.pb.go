@@ -77,6 +77,11 @@ type SpecialistPoolServiceSpecialistPoolTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *SpecialistPool
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*SpecialistPool)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -183,7 +188,7 @@ func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) testGet(t *testing
 			Name: created.Name,
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -361,8 +366,8 @@ func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) testList(t *testin
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.SpecialistPools,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.SpecialistPools),
 				cmpopts.SortSlices(func(a, b *SpecialistPool) bool {
 					return a.Name < b.Name
 				}),
@@ -413,8 +418,8 @@ func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) testList(t *testin
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *SpecialistPool) bool {
 					return a.Name < b.Name
 				}),
@@ -460,8 +465,8 @@ func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) testList(t *testin
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.SpecialistPools,
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.SpecialistPools),
 				cmpopts.SortSlices(func(a, b *SpecialistPool) bool {
 					return a.Name < b.Name
 				}),
@@ -565,6 +570,26 @@ func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) maybeSkip(t *testi
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) normalize(msg *SpecialistPool) *SpecialistPool {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*SpecialistPool)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) normalizeAll(msgs []*SpecialistPool) []*SpecialistPool {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*SpecialistPool, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *SpecialistPoolServiceSpecialistPoolTestSuiteConfig) create(t *testing.T, parent string) *SpecialistPool {

@@ -7,6 +7,7 @@ import (
 	cmpopts "github.com/google/go-cmp/cmp/cmpopts"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	assert "gotest.tools/v3/assert"
 	strings "strings"
@@ -72,6 +73,11 @@ type DeploymentResourcePoolServiceDeploymentResourcePoolTestSuiteConfig struct {
 	// Create should return a resource which is valid to create, i.e.
 	// all required fields set.
 	Create func(parent string) *DeploymentResourcePool
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*DeploymentResourcePool)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -193,7 +199,7 @@ func (fx *DeploymentResourcePoolServiceDeploymentResourcePoolTestSuiteConfig) te
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetDeploymentResourcePool(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -270,8 +276,8 @@ func (fx *DeploymentResourcePoolServiceDeploymentResourcePoolTestSuiteConfig) te
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetDeploymentResourcePools(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetDeploymentResourcePools()),
 				cmpopts.SortSlices(func(a, b *DeploymentResourcePool) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -322,8 +328,8 @@ func (fx *DeploymentResourcePoolServiceDeploymentResourcePoolTestSuiteConfig) te
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *DeploymentResourcePool) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -369,8 +375,8 @@ func (fx *DeploymentResourcePoolServiceDeploymentResourcePoolTestSuiteConfig) te
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetDeploymentResourcePools(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetDeploymentResourcePools()),
 				cmpopts.SortSlices(func(a, b *DeploymentResourcePool) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -474,6 +480,26 @@ func (fx *DeploymentResourcePoolServiceDeploymentResourcePoolTestSuiteConfig) ma
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *DeploymentResourcePoolServiceDeploymentResourcePoolTestSuiteConfig) normalize(msg *DeploymentResourcePool) *DeploymentResourcePool {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*DeploymentResourcePool)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *DeploymentResourcePoolServiceDeploymentResourcePoolTestSuiteConfig) normalizeAll(msgs []*DeploymentResourcePool) []*DeploymentResourcePool {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*DeploymentResourcePool, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *DeploymentResourcePoolServiceDeploymentResourcePoolTestSuiteConfig) create(t *testing.T, parent string) *DeploymentResourcePool {

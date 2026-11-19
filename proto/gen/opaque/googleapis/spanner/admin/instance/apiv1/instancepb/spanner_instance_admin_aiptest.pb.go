@@ -131,6 +131,11 @@ type InstanceAdminInstanceTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *Instance
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*Instance)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -338,7 +343,7 @@ func (fx *InstanceAdminInstanceTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetInstance(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -562,8 +567,8 @@ func (fx *InstanceAdminInstanceTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetInstances(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetInstances()),
 				cmpopts.SortSlices(func(a, b *Instance) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -614,8 +619,8 @@ func (fx *InstanceAdminInstanceTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *Instance) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -661,8 +666,8 @@ func (fx *InstanceAdminInstanceTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetInstances(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetInstances()),
 				cmpopts.SortSlices(func(a, b *Instance) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -768,6 +773,26 @@ func (fx *InstanceAdminInstanceTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *InstanceAdminInstanceTestSuiteConfig) normalize(msg *Instance) *Instance {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*Instance)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *InstanceAdminInstanceTestSuiteConfig) normalizeAll(msgs []*Instance) []*Instance {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*Instance, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *InstanceAdminInstanceTestSuiteConfig) create(t *testing.T, parent string) *Instance {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -799,6 +824,11 @@ type InstanceAdminInstanceConfigTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *InstanceConfig
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*InstanceConfig)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -888,7 +918,7 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetInstanceConfig(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -1049,8 +1079,8 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetInstanceConfigs(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetInstanceConfigs()),
 				cmpopts.SortSlices(func(a, b *InstanceConfig) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1101,8 +1131,8 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) testList(t *testing.T) {
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *InstanceConfig) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1148,8 +1178,8 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) testList(t *testing.T) {
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetInstanceConfigs(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetInstanceConfigs()),
 				cmpopts.SortSlices(func(a, b *InstanceConfig) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1267,6 +1297,26 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) maybeSkip(t *testing.T) {
 	}
 }
 
+func (fx *InstanceAdminInstanceConfigTestSuiteConfig) normalize(msg *InstanceConfig) *InstanceConfig {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*InstanceConfig)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *InstanceAdminInstanceConfigTestSuiteConfig) normalizeAll(msgs []*InstanceConfig) []*InstanceConfig {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*InstanceConfig, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
+}
+
 func (fx *InstanceAdminInstanceConfigTestSuiteConfig) create(t *testing.T, parent string) *InstanceConfig {
 	t.Helper()
 	t.Skip("Long running create method not supported")
@@ -1298,6 +1348,11 @@ type InstanceAdminInstancePartitionTestSuiteConfig struct {
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
 	Update func(parent string) *InstancePartition
+	// Normalize, if non-nil, changes a copy of each resource before a test compares it
+	// with another, such as to clear a field that the service returns from one method only.
+	// Clear only fields that differ between calls by design: what Normalize clears, no
+	// test compares.
+	Normalize func(*InstancePartition)
 	// Patterns of tests to skip.
 	// For example if a service has a Get method:
 	// Skip: ["Get"] will skip all tests for Get.
@@ -1441,7 +1496,7 @@ func (fx *InstanceAdminInstancePartitionTestSuiteConfig) testGet(t *testing.T) {
 		req.SetName(created.GetName())
 		msg, err := fx.Service().GetInstancePartition(fx.Context(), req)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, msg, created, protocmp.Transform())
+		assert.DeepEqual(t, fx.normalize(msg), fx.normalize(created), protocmp.Transform())
 	})
 
 	// Method should fail with NotFound if the resource does not exist.
@@ -1636,8 +1691,8 @@ func (fx *InstanceAdminInstancePartitionTestSuiteConfig) testList(t *testing.T) 
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				response.GetInstancePartitions(),
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(response.GetInstancePartitions()),
 				cmpopts.SortSlices(func(a, b *InstancePartition) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1688,8 +1743,8 @@ func (fx *InstanceAdminInstancePartitionTestSuiteConfig) testList(t *testing.T) 
 			}
 			assert.DeepEqual(
 				t,
-				parentMsgs,
-				msgs,
+				fx.normalizeAll(parentMsgs),
+				fx.normalizeAll(msgs),
 				cmpopts.SortSlices(func(a, b *InstancePartition) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1735,8 +1790,8 @@ func (fx *InstanceAdminInstancePartitionTestSuiteConfig) testList(t *testing.T) 
 			assert.NilError(t, err)
 			assert.DeepEqual(
 				t,
-				parentMsgs[deleteCount:],
-				response.GetInstancePartitions(),
+				fx.normalizeAll(parentMsgs[deleteCount:]),
+				fx.normalizeAll(response.GetInstancePartitions()),
 				cmpopts.SortSlices(func(a, b *InstancePartition) bool {
 					return a.GetName() < b.GetName()
 				}),
@@ -1852,6 +1907,26 @@ func (fx *InstanceAdminInstancePartitionTestSuiteConfig) maybeSkip(t *testing.T)
 			t.Skip("skipped because of .Skip")
 		}
 	}
+}
+
+func (fx *InstanceAdminInstancePartitionTestSuiteConfig) normalize(msg *InstancePartition) *InstancePartition {
+	if fx.Normalize == nil || msg == nil {
+		return msg
+	}
+	normalized := proto.Clone(msg).(*InstancePartition)
+	fx.Normalize(normalized)
+	return normalized
+}
+
+func (fx *InstanceAdminInstancePartitionTestSuiteConfig) normalizeAll(msgs []*InstancePartition) []*InstancePartition {
+	if fx.Normalize == nil {
+		return msgs
+	}
+	normalized := make([]*InstancePartition, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = fx.normalize(msg)
+	}
+	return normalized
 }
 
 func (fx *InstanceAdminInstancePartitionTestSuiteConfig) create(t *testing.T, parent string) *InstancePartition {

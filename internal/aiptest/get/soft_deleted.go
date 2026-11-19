@@ -47,7 +47,16 @@ var softDeleted = suite.Test{
 			f.P("_ = deleted") // prevent unused variable error.
 			f.P("_ = msg")     // prevent unused variable error.
 		} else {
-			f.P(ident.AssertDeepEqual, "(t, msg, deleted, ", ident.ProtocmpTransform, "())")
+			f.P(
+				ident.AssertDeepEqual,
+				"(t, ",
+				ident.FixtureNormalize,
+				"(msg), ",
+				ident.FixtureNormalize,
+				"(deleted), ",
+				ident.ProtocmpTransform,
+				"())",
+			)
 		}
 		return nil
 	},
