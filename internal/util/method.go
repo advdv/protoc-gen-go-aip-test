@@ -74,7 +74,12 @@ func (m MethodCreate) Generate(f *protogen.GeneratedFile, request, response, err
 			f.P(upper, ": fx.Create(", m.Parent, "),")
 		}
 		if userSetID != "" && HasUserSettableIDField(m.Resource, m.Method.Input.Desc) {
-			f.P(upper, "Id: ", userSetID, ",")
+			if userSettableIDField(m.Resource, m.Method.Input.Desc).HasPresence() {
+				// An optional ID is a pointer, which stays nil when no ID is set.
+				f.P(upper, "Id: func() *string { if id := ", userSetID, "; id != \"\" { return &id }; return nil }(),")
+			} else {
+				f.P(upper, "Id: ", userSetID, ",")
+			}
 		}
 		f.P("})")
 	}

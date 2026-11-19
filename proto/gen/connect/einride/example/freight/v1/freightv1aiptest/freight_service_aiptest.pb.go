@@ -146,8 +146,13 @@ func (fx *FreightServiceShipperTestSuiteConfig) testCreate(t *testing.T) {
 			userSetID = fx.IDGenerator()
 		}
 		msg, err := fx.Service().CreateShipper(fx.Context(), &v1.CreateShipperRequest{
-			Shipper:   fx.Create(),
-			ShipperId: userSetID,
+			Shipper: fx.Create(),
+			ShipperId: func() *string {
+				if id := userSetID; id != "" {
+					return &id
+				}
+				return nil
+			}(),
 		})
 		assert.NilError(t, err)
 		assert.Check(t, msg.CreateTime != nil)
@@ -163,8 +168,13 @@ func (fx *FreightServiceShipperTestSuiteConfig) testCreate(t *testing.T) {
 			userSetID = fx.IDGenerator()
 		}
 		msg, err := fx.Service().CreateShipper(fx.Context(), &v1.CreateShipperRequest{
-			Shipper:   fx.Create(),
-			ShipperId: userSetID,
+			Shipper: fx.Create(),
+			ShipperId: func() *string {
+				if id := userSetID; id != "" {
+					return &id
+				}
+				return nil
+			}(),
 		})
 		assert.NilError(t, err)
 		persisted, err := fx.Service().GetShipper(fx.Context(), &v1.GetShipperRequest{
@@ -179,8 +189,13 @@ func (fx *FreightServiceShipperTestSuiteConfig) testCreate(t *testing.T) {
 	t.Run("user settable id", func(t *testing.T) {
 		fx.maybeSkip(t)
 		msg, err := fx.Service().CreateShipper(fx.Context(), &v1.CreateShipperRequest{
-			Shipper:   fx.Create(),
-			ShipperId: "usersetid",
+			Shipper: fx.Create(),
+			ShipperId: func() *string {
+				if id := "usersetid"; id != "" {
+					return &id
+				}
+				return nil
+			}(),
 		})
 		assert.NilError(t, err)
 		assert.Check(t, strings.HasSuffix(msg.GetName(), "usersetid"))
@@ -230,8 +245,13 @@ func (fx *FreightServiceShipperTestSuiteConfig) testCreate(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				fx.maybeSkip(t)
 				_, err := fx.Service().CreateShipper(fx.Context(), &v1.CreateShipperRequest{
-					Shipper:   fx.Create(),
-					ShipperId: tt.id,
+					Shipper: fx.Create(),
+					ShipperId: func() *string {
+						if id := tt.id; id != "" {
+							return &id
+						}
+						return nil
+					}(),
 				})
 				assert.Equal(t, v2.CodeInvalidArgument, v2.CodeOf(err), err)
 			})
@@ -243,13 +263,23 @@ func (fx *FreightServiceShipperTestSuiteConfig) testCreate(t *testing.T) {
 	t.Run("already exists", func(t *testing.T) {
 		fx.maybeSkip(t)
 		_, err := fx.Service().CreateShipper(fx.Context(), &v1.CreateShipperRequest{
-			Shipper:   fx.Create(),
-			ShipperId: "alreadyexists",
+			Shipper: fx.Create(),
+			ShipperId: func() *string {
+				if id := "alreadyexists"; id != "" {
+					return &id
+				}
+				return nil
+			}(),
 		})
 		assert.NilError(t, err)
 		_, err = fx.Service().CreateShipper(fx.Context(), &v1.CreateShipperRequest{
-			Shipper:   fx.Create(),
-			ShipperId: "alreadyexists",
+			Shipper: fx.Create(),
+			ShipperId: func() *string {
+				if id := "alreadyexists"; id != "" {
+					return &id
+				}
+				return nil
+			}(),
 		})
 		assert.Equal(t, v2.CodeAlreadyExists, v2.CodeOf(err), err)
 	})
@@ -272,8 +302,13 @@ func (fx *FreightServiceShipperTestSuiteConfig) testCreate(t *testing.T) {
 				userSetID = fx.IDGenerator()
 			}
 			_, err := fx.Service().CreateShipper(fx.Context(), &v1.CreateShipperRequest{
-				Shipper:   msg,
-				ShipperId: userSetID,
+				Shipper: msg,
+				ShipperId: func() *string {
+					if id := userSetID; id != "" {
+						return &id
+					}
+					return nil
+				}(),
 			})
 			assert.Equal(t, v2.CodeInvalidArgument, v2.CodeOf(err), err)
 		})
@@ -291,8 +326,13 @@ func (fx *FreightServiceShipperTestSuiteConfig) testCreate(t *testing.T) {
 				userSetID = fx.IDGenerator()
 			}
 			_, err := fx.Service().CreateShipper(fx.Context(), &v1.CreateShipperRequest{
-				Shipper:   msg,
-				ShipperId: userSetID,
+				Shipper: msg,
+				ShipperId: func() *string {
+					if id := userSetID; id != "" {
+						return &id
+					}
+					return nil
+				}(),
 			})
 			assert.Equal(t, v2.CodeInvalidArgument, v2.CodeOf(err), err)
 		})
@@ -315,8 +355,13 @@ func (fx *FreightServiceShipperTestSuiteConfig) testCreate(t *testing.T) {
 				userSetID = fx.IDGenerator()
 			}
 			_, err := fx.Service().CreateShipper(fx.Context(), &v1.CreateShipperRequest{
-				Shipper:   msg,
-				ShipperId: userSetID,
+				Shipper: msg,
+				ShipperId: func() *string {
+					if id := userSetID; id != "" {
+						return &id
+					}
+					return nil
+				}(),
 			})
 			assert.Equal(t, v2.CodeInvalidArgument, v2.CodeOf(err), err)
 		})
@@ -330,8 +375,13 @@ func (fx *FreightServiceShipperTestSuiteConfig) testCreate(t *testing.T) {
 			userSetID = fx.IDGenerator()
 		}
 		created, err := fx.Service().CreateShipper(fx.Context(), &v1.CreateShipperRequest{
-			Shipper:   fx.Create(),
-			ShipperId: userSetID,
+			Shipper: fx.Create(),
+			ShipperId: func() *string {
+				if id := userSetID; id != "" {
+					return &id
+				}
+				return nil
+			}(),
 		})
 		assert.NilError(t, err)
 		assert.Check(t, created.Etag != "")
@@ -700,8 +750,13 @@ func (fx *FreightServiceShipperTestSuiteConfig) create(t *testing.T) *v1.Shipper
 		userSetID = fx.IDGenerator()
 	}
 	created, err := fx.Service().CreateShipper(fx.Context(), &v1.CreateShipperRequest{
-		Shipper:   fx.Create(),
-		ShipperId: userSetID,
+		Shipper: fx.Create(),
+		ShipperId: func() *string {
+			if id := userSetID; id != "" {
+				return &id
+			}
+			return nil
+		}(),
 	})
 	assert.NilError(t, err)
 	return created

@@ -15,8 +15,15 @@ import (
 )
 
 func HasUserSettableIDField(r *annotations.ResourceDescriptor, m protoreflect.MessageDescriptor) bool {
+	return userSettableIDField(r, m) != nil
+}
+
+func userSettableIDField(
+	r *annotations.ResourceDescriptor,
+	m protoreflect.MessageDescriptor,
+) protoreflect.FieldDescriptor {
 	idField := strcase.SnakeCase(r.GetSingular()) + "_id"
-	return m.Fields().ByName(protoreflect.Name(idField)) != nil
+	return m.Fields().ByName(protoreflect.Name(idField))
 }
 
 func HasParent(r *annotations.ResourceDescriptor) bool {
