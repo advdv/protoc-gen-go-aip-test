@@ -3,8 +3,8 @@ package util
 import (
 	"strings"
 
-	"github.com/einride/protoc-gen-go-aip-test/internal/aip/method"
-	"github.com/einride/protoc-gen-go-aip-test/internal/xrange"
+	"github.com/advdv/protoc-gen-go-aip-test/internal/aip/method"
+	"github.com/advdv/protoc-gen-go-aip-test/internal/xrange"
 	"github.com/stoewer/go-strcase"
 	"go.einride.tech/aip/fieldbehavior"
 	"go.einride.tech/aip/resourcename"

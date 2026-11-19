@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 
-	"github.com/einride/protoc-gen-go-aip-test/internal/plugin"
+	"github.com/advdv/protoc-gen-go-aip-test/internal/plugin"
 	"google.golang.org/protobuf/compiler/protogen"
 )
 

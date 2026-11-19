@@ -1,4 +1,4 @@
-module github.com/einride/protoc-gen-go-aip-test
+module github.com/advdv/protoc-gen-go-aip-test
 
 go 1.26.11
 

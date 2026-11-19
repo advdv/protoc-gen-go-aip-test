@@ -3,13 +3,13 @@ plugins:
   - name: go
     out: gen/openstruct
     opt:
-      - module=github.com/einride/protoc-gen-go-aip-test/proto/gen
+      - module=github.com/advdv/protoc-gen-go-aip-test/proto/gen
       - default_api_level=API_OPEN
 
   - name: go-grpc
     out: gen/openstruct
-    opt: module=github.com/einride/protoc-gen-go-aip-test/proto/gen
+    opt: module=github.com/advdv/protoc-gen-go-aip-test/proto/gen
 
   - name: go-aip-test
     out: gen/openstruct
-    opt: module=github.com/einride/protoc-gen-go-aip-test/proto/gen
+    opt: module=github.com/advdv/protoc-gen-go-aip-test/proto/gen

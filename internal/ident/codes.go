@@ -1,7 +1,7 @@
 package ident
 
 import (
-	"github.com/einride/protoc-gen-go-aip-test/internal/util"
+	"github.com/advdv/protoc-gen-go-aip-test/internal/util"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/compiler/protogen"
 )

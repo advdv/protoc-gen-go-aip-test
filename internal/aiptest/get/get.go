@@ -1,7 +1,7 @@
 package get
 
 import (
-	"github.com/einride/protoc-gen-go-aip-test/internal/suite"
+	"github.com/advdv/protoc-gen-go-aip-test/internal/suite"
 )
 
 // Suite of Get tests.

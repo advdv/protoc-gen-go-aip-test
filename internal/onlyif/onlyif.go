@@ -4,8 +4,8 @@ package onlyif
 import (
 	"fmt"
 
-	"github.com/einride/protoc-gen-go-aip-test/internal/suite"
-	"github.com/einride/protoc-gen-go-aip-test/internal/util"
+	"github.com/advdv/protoc-gen-go-aip-test/internal/suite"
+	"github.com/advdv/protoc-gen-go-aip-test/internal/util"
 	"go.einride.tech/aip/reflect/aipreflect"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 )

@@ -7,7 +7,7 @@ import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "google/type/latlng.proto";
 
-option go_package = "github.com/einride/protoc-gen-go-aip-test/proto/gen/einride/example/freight/v1;examplefreightv1";
+option go_package = "github.com/advdv/protoc-gen-go-aip-test/proto/gen/einride/example/freight/v1;examplefreightv1";
 option java_multiple_files = true;
 option java_outer_classname = "SiteProto";
 option java_package = "tech.einride.example.freight.v1";

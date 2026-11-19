@@ -5,7 +5,7 @@ package freightv1aiptest
 import (
 	v2 "connectrpc.com/connect/v2"
 	context "context"
-	v1 "github.com/einride/protoc-gen-go-aip-test/proto/gen/connect/einride/example/freight/v1"
+	v1 "github.com/advdv/protoc-gen-go-aip-test/proto/gen/connect/einride/example/freight/v1"
 	cmpopts "github.com/google/go-cmp/cmp/cmpopts"
 	proto "google.golang.org/protobuf/proto"
 	protocmp "google.golang.org/protobuf/testing/protocmp"

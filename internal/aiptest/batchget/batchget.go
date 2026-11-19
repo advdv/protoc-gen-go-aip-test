@@ -1,9 +1,9 @@
 package batchget
 
 import (
-	"github.com/einride/protoc-gen-go-aip-test/internal/ident"
-	"github.com/einride/protoc-gen-go-aip-test/internal/suite"
-	"github.com/einride/protoc-gen-go-aip-test/internal/util"
+	"github.com/advdv/protoc-gen-go-aip-test/internal/ident"
+	"github.com/advdv/protoc-gen-go-aip-test/internal/suite"
+	"github.com/advdv/protoc-gen-go-aip-test/internal/util"
 	"google.golang.org/protobuf/compiler/protogen"
 )
 

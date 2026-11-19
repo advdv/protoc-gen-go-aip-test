@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/einride/protoc-gen-go-aip-test/internal/aiptest"
-	"github.com/einride/protoc-gen-go-aip-test/internal/suite"
+	"github.com/advdv/protoc-gen-go-aip-test/internal/aiptest"
+	"github.com/advdv/protoc-gen-go-aip-test/internal/suite"
 )
 
 func main() {

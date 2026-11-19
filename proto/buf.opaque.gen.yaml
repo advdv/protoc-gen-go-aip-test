@@ -3,15 +3,15 @@ plugins:
   - name: go
     out: gen/opaque
     opt:
-      - module=github.com/einride/protoc-gen-go-aip-test/proto/gen
+      - module=github.com/advdv/protoc-gen-go-aip-test/proto/gen
       - default_api_level=API_OPAQUE
 
   - name: go-grpc
     out: gen/opaque
-    opt: module=github.com/einride/protoc-gen-go-aip-test/proto/gen
+    opt: module=github.com/advdv/protoc-gen-go-aip-test/proto/gen
 
   - name: go-aip-test
     out: gen/opaque
     opt:
-      - module=github.com/einride/protoc-gen-go-aip-test/proto/gen
+      - module=github.com/advdv/protoc-gen-go-aip-test/proto/gen
       - api_mode=API_OPAQUE

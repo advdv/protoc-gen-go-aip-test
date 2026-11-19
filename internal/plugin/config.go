@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/einride/protoc-gen-go-aip-test/internal/util"
+	"github.com/advdv/protoc-gen-go-aip-test/internal/util"
 )
 
 // APIMode represents the protobuf API mode for generated code.

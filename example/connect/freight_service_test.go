@@ -6,9 +6,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	examplefreightv1 "github.com/einride/protoc-gen-go-aip-test/proto/gen/connect/einride/example/freight/v1"
-	"github.com/einride/protoc-gen-go-aip-test/proto/gen/connect/einride/example/freight/v1/freightv1aiptest"
-	"github.com/einride/protoc-gen-go-aip-test/proto/gen/connect/einride/example/freight/v1/freightv1connect"
+	examplefreightv1 "github.com/advdv/protoc-gen-go-aip-test/proto/gen/connect/einride/example/freight/v1"
+	"github.com/advdv/protoc-gen-go-aip-test/proto/gen/connect/einride/example/freight/v1/freightv1aiptest"
+	"github.com/advdv/protoc-gen-go-aip-test/proto/gen/connect/einride/example/freight/v1/freightv1connect"
 )
 
 // Both the Connect client and the Connect handler can be tested: the client to test a

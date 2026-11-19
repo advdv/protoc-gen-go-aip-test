@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	examplefreightv1 "github.com/einride/protoc-gen-go-aip-test/proto/gen/openstruct/einride/example/freight/v1"
+	examplefreightv1 "github.com/advdv/protoc-gen-go-aip-test/proto/gen/openstruct/einride/example/freight/v1"
 )
 
 func Test_FreightService(t *testing.T) {

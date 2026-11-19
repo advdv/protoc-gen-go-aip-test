@@ -1,7 +1,7 @@
 package util
 
 import (
-	"github.com/einride/protoc-gen-go-aip-test/internal/aip/method"
+	"github.com/advdv/protoc-gen-go-aip-test/internal/aip/method"
 	"go.einride.tech/aip/reflect/aipreflect"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/compiler/protogen"
