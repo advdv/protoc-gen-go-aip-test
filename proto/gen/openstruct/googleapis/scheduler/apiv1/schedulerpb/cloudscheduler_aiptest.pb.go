@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -80,6 +81,9 @@ type CloudSchedulerJobTestSuiteConfig struct {
 	Create func(parent string) *Job
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Job
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -256,6 +260,1229 @@ func (fx *CloudSchedulerJobTestSuiteConfig) testUpdate(t *testing.T) {
 		})
 		assert.NilError(t, err)
 		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
+	})
+
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("pubsub_target", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"pubsub_target",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("app_engine_http_target", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"app_engine_http_target",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("http_target", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"http_target",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("schedule", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schedule",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("time_zone", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"time_zone",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("user_update_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"user_update_time",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("state", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"state",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("status", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"status",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("schedule_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schedule_time",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("last_attempt_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"last_attempt_time",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("retry_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"retry_config",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("attempt_deadline", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"attempt_deadline",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(&Job{}, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("pubsub_target", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "pubsub_target")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"pubsub_target",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Job{}, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("app_engine_http_target", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "app_engine_http_target")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"app_engine_http_target",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Job{}, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("http_target", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "http_target")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"http_target",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Job{}, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("schedule", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schedule")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schedule",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Job{}, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("time_zone", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "time_zone")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"time_zone",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Job{}, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("user_update_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "user_update_time")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"user_update_time",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Job{}, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("state", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "state")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"state",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Job{}, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("status", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "status")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"status",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Job{}, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("schedule_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schedule_time")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schedule_time",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Job{}, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("last_attempt_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "last_attempt_time")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"last_attempt_time",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Job{}, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("retry_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "retry_config")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"retry_config",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Job{}, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+		t.Run("attempt_deadline", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "attempt_deadline")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"attempt_deadline",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Job{}, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("pubsub_target", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "pubsub_target")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+			}
+		})
+		t.Run("app_engine_http_target", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "app_engine_http_target")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+			}
+		})
+		t.Run("http_target", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "http_target")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+			}
+		})
+		t.Run("schedule", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schedule")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+			}
+		})
+		t.Run("time_zone", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "time_zone")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+			}
+		})
+		t.Run("user_update_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "user_update_time")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+			}
+		})
+		t.Run("state", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "state")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+			}
+		})
+		t.Run("status", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "status")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+			}
+		})
+		t.Run("schedule_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schedule_time")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+			}
+		})
+		t.Run("last_attempt_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "last_attempt_time")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+			}
+		})
+		t.Run("retry_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "retry_config")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+			}
+		})
+		t.Run("attempt_deadline", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "attempt_deadline")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+				Job: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Job{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.Name = created.Name
+		updated, err := fx.Service().UpdateJob(fx.Context(), &UpdateJobRequest{
+			Job: msg,
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{},
+			},
+		})
+		assert.NilError(t, err)
+		persisted, err := fx.Service().GetJob(fx.Context(), &GetJobRequest{
+			Name: updated.Name,
+		})
+		assert.NilError(t, err)
+		for _, got := range []*Job{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "pubsub_target"), fx.field(got, "pubsub_target"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "app_engine_http_target"), fx.field(got, "app_engine_http_target"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "http_target"), fx.field(got, "http_target"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "schedule"), fx.field(got, "schedule"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "time_zone"), fx.field(got, "time_zone"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "user_update_time"), fx.field(got, "user_update_time"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "status"), fx.field(got, "status"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "schedule_time"), fx.field(got, "schedule_time"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "last_attempt_time"), fx.field(got, "last_attempt_time"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "retry_config"), fx.field(got, "retry_config"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "attempt_deadline"), fx.field(got, "attempt_deadline"), protocmp.Transform())
+		}
 	})
 
 	{
@@ -597,4 +1824,20 @@ func (fx *CloudSchedulerJobTestSuiteConfig) create(t *testing.T, parent string) 
 func (fx *CloudSchedulerJobTestSuiteConfig) notFoundName(name string) string {
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *CloudSchedulerJobTestSuiteConfig) field(msg *Job, name protoreflect.Name) *Job {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Job{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *CloudSchedulerJobTestSuiteConfig) withoutField(msg *Job, name protoreflect.Name) *Job {
+	cleared := proto.Clone(msg).(*Job)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }

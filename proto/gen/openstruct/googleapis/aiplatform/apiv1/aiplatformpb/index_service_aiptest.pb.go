@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -80,6 +81,9 @@ type IndexServiceIndexTestSuiteConfig struct {
 	Create func(parent string) *Index
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Index
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -335,6 +339,25 @@ func (fx *IndexServiceIndexTestSuiteConfig) testUpdate(t *testing.T) {
 					UpdateMask: &fieldmaskpb.FieldMask{
 						Paths: []string{
 							"*",
+						},
+					},
+				})
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+		})
+
+		// For each required field that Update can change, the method should fail with
+		// InvalidArgument if an update_mask names the field and the request leaves it empty.
+		t.Run("update mask path required", func(t *testing.T) {
+			fx.maybeSkip(t)
+			t.Run("display_name", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "display_name")
+				_, err := fx.Service().UpdateIndex(fx.Context(), &UpdateIndexRequest{
+					Index: msg,
+					UpdateMask: &fieldmaskpb.FieldMask{
+						Paths: []string{
+							"display_name",
 						},
 					},
 				})
@@ -633,4 +656,20 @@ func (fx *IndexServiceIndexTestSuiteConfig) create(t *testing.T, parent string) 
 func (fx *IndexServiceIndexTestSuiteConfig) notFoundName(name string) string {
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *IndexServiceIndexTestSuiteConfig) field(msg *Index, name protoreflect.Name) *Index {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Index{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *IndexServiceIndexTestSuiteConfig) withoutField(msg *Index, name protoreflect.Name) *Index {
+	cleared := proto.Clone(msg).(*Index)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }

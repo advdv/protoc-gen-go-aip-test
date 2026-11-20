@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -106,6 +107,9 @@ type FreightServiceShipperTestSuiteConfig struct {
 	IDGenerator func() string
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func() *Shipper
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -562,6 +566,128 @@ func (fx *FreightServiceShipperTestSuiteConfig) testUpdate(t *testing.T) {
 		assert.Check(t, updated.Etag != created.Etag)
 	})
 
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			created := fx.create(t)
+			msg := fx.Update()
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateShipper(fx.Context(), &UpdateShipperRequest{
+				Shipper: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"display_name",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetShipper(fx.Context(), &GetShipperRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Shipper{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "billing_account"), fx.field(got, "billing_account"), protocmp.Transform())
+			}
+		})
+		t.Run("billing_account", func(t *testing.T) {
+			fx.maybeSkip(t)
+			created := fx.create(t)
+			msg := fx.Update()
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateShipper(fx.Context(), &UpdateShipperRequest{
+				Shipper: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"billing_account",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetShipper(fx.Context(), &GetShipperRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Shipper{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "billing_account"), fx.field(got, "billing_account"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			created := fx.create(t)
+			msg := fx.Update()
+			msg = fx.withoutField(msg, "display_name")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateShipper(fx.Context(), &UpdateShipperRequest{
+				Shipper: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetShipper(fx.Context(), &GetShipperRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Shipper{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			}
+		})
+		t.Run("billing_account", func(t *testing.T) {
+			fx.maybeSkip(t)
+			created := fx.create(t)
+			msg := fx.Update()
+			msg = fx.withoutField(msg, "billing_account")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateShipper(fx.Context(), &UpdateShipperRequest{
+				Shipper: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetShipper(fx.Context(), &GetShipperRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Shipper{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "billing_account"), fx.field(got, "billing_account"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		created := fx.create(t)
+		msg := fx.Update()
+		msg.Name = created.Name
+		msg.Etag = created.Etag
+		updated, err := fx.Service().UpdateShipper(fx.Context(), &UpdateShipperRequest{
+			Shipper: msg,
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{},
+			},
+		})
+		assert.NilError(t, err)
+		persisted, err := fx.Service().GetShipper(fx.Context(), &GetShipperRequest{
+			Name: updated.Name,
+		})
+		assert.NilError(t, err)
+		for _, got := range []*Shipper{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "billing_account"), fx.field(got, "billing_account"), protocmp.Transform())
+		}
+	})
+
 	{
 		created := fx.create(t)
 		// Method should fail with NotFound if the resource does not exist.
@@ -626,6 +752,38 @@ func (fx *FreightServiceShipperTestSuiteConfig) testUpdate(t *testing.T) {
 					UpdateMask: &fieldmaskpb.FieldMask{
 						Paths: []string{
 							"*",
+						},
+					},
+				})
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+		})
+
+		// For each required field that Update can change, the method should fail with
+		// InvalidArgument if an update_mask names the field and the request leaves it empty.
+		t.Run("update mask path required", func(t *testing.T) {
+			fx.maybeSkip(t)
+			t.Run("display_name", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "display_name")
+				_, err := fx.Service().UpdateShipper(fx.Context(), &UpdateShipperRequest{
+					Shipper: msg,
+					UpdateMask: &fieldmaskpb.FieldMask{
+						Paths: []string{
+							"display_name",
+						},
+					},
+				})
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+			t.Run("billing_account", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "billing_account")
+				_, err := fx.Service().UpdateShipper(fx.Context(), &UpdateShipperRequest{
+					Shipper: msg,
+					UpdateMask: &fieldmaskpb.FieldMask{
+						Paths: []string{
+							"billing_account",
 						},
 					},
 				})
@@ -811,6 +969,22 @@ func (fx *FreightServiceShipperTestSuiteConfig) notFoundName(name string) string
 	return name + "notfound"
 }
 
+func (fx *FreightServiceShipperTestSuiteConfig) field(msg *Shipper, name protoreflect.Name) *Shipper {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Shipper{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *FreightServiceShipperTestSuiteConfig) withoutField(msg *Shipper, name protoreflect.Name) *Shipper {
+	cleared := proto.Clone(msg).(*Shipper)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
+}
+
 type FreightServiceSiteTestSuiteConfig struct {
 	currParent int
 
@@ -841,6 +1015,9 @@ type FreightServiceSiteTestSuiteConfig struct {
 	IDGenerator func() string
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Site
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -1465,6 +1642,242 @@ func (fx *FreightServiceSiteTestSuiteConfig) testUpdate(t *testing.T) {
 		assert.Check(t, updated.Etag != created.Etag)
 	})
 
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateSite(fx.Context(), &UpdateSiteRequest{
+				Site: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"display_name",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSite(fx.Context(), &GetSiteRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Site{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "lat_lng"), fx.field(got, "lat_lng"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "billing"), fx.field(got, "billing"), protocmp.Transform())
+			}
+		})
+		t.Run("lat_lng", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateSite(fx.Context(), &UpdateSiteRequest{
+				Site: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"lat_lng",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSite(fx.Context(), &GetSiteRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Site{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "lat_lng"), fx.field(got, "lat_lng"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "billing"), fx.field(got, "billing"), protocmp.Transform())
+			}
+		})
+		t.Run("billing", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateSite(fx.Context(), &UpdateSiteRequest{
+				Site: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"billing",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSite(fx.Context(), &GetSiteRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Site{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "lat_lng"), fx.field(got, "lat_lng"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "billing"), fx.field(got, "billing"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("lat_lng", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "lat_lng")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateSite(fx.Context(), &UpdateSiteRequest{
+				Site: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"lat_lng",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSite(fx.Context(), &GetSiteRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Site{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Site{}, "lat_lng"), fx.field(got, "lat_lng"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "billing"), fx.field(got, "billing"), protocmp.Transform())
+			}
+		})
+		t.Run("billing", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "billing")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateSite(fx.Context(), &UpdateSiteRequest{
+				Site: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"billing",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSite(fx.Context(), &GetSiteRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Site{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "lat_lng"), fx.field(got, "lat_lng"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Site{}, "billing"), fx.field(got, "billing"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "display_name")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateSite(fx.Context(), &UpdateSiteRequest{
+				Site: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSite(fx.Context(), &GetSiteRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Site{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			}
+		})
+		t.Run("lat_lng", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "lat_lng")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateSite(fx.Context(), &UpdateSiteRequest{
+				Site: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSite(fx.Context(), &GetSiteRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Site{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "lat_lng"), fx.field(got, "lat_lng"), protocmp.Transform())
+			}
+		})
+		t.Run("billing", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "billing")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateSite(fx.Context(), &UpdateSiteRequest{
+				Site: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSite(fx.Context(), &GetSiteRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Site{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "billing"), fx.field(got, "billing"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.Name = created.Name
+		msg.Etag = created.Etag
+		updated, err := fx.Service().UpdateSite(fx.Context(), &UpdateSiteRequest{
+			Site: msg,
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{},
+			},
+		})
+		assert.NilError(t, err)
+		persisted, err := fx.Service().GetSite(fx.Context(), &GetSiteRequest{
+			Name: updated.Name,
+		})
+		assert.NilError(t, err)
+		for _, got := range []*Site{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "lat_lng"), fx.field(got, "lat_lng"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "billing"), fx.field(got, "billing"), protocmp.Transform())
+		}
+	})
+
 	{
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
@@ -1530,6 +1943,25 @@ func (fx *FreightServiceSiteTestSuiteConfig) testUpdate(t *testing.T) {
 					UpdateMask: &fieldmaskpb.FieldMask{
 						Paths: []string{
 							"*",
+						},
+					},
+				})
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+		})
+
+		// For each required field that Update can change, the method should fail with
+		// InvalidArgument if an update_mask names the field and the request leaves it empty.
+		t.Run("update mask path required", func(t *testing.T) {
+			fx.maybeSkip(t)
+			t.Run("display_name", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "display_name")
+				_, err := fx.Service().UpdateSite(fx.Context(), &UpdateSiteRequest{
+					Site: msg,
+					UpdateMask: &fieldmaskpb.FieldMask{
+						Paths: []string{
+							"display_name",
 						},
 					},
 				})
@@ -1899,4 +2331,20 @@ func (fx *FreightServiceSiteTestSuiteConfig) notFoundName(name string) string {
 	}
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *FreightServiceSiteTestSuiteConfig) field(msg *Site, name protoreflect.Name) *Site {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Site{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *FreightServiceSiteTestSuiteConfig) withoutField(msg *Site, name protoreflect.Name) *Site {
+	cleared := proto.Clone(msg).(*Site)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }

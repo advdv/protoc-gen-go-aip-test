@@ -173,8 +173,10 @@ type MethodUpdate struct {
 	Parent     string
 	Msg        string
 	UpdateMask []string
-	Etag       string
-	EtagTest   bool
+	// EmptyMask sends an update_mask without paths, when UpdateMask is empty.
+	EmptyMask bool
+	Etag      string
+	EtagTest  bool
 }
 
 func (m MethodUpdate) Generate(f *protogen.GeneratedFile, request, response, err, assign string, apiMode APIMode) {
@@ -219,7 +221,7 @@ func (m MethodUpdate) Generate(f *protogen.GeneratedFile, request, response, err
 		} else {
 			f.P(request, ".Set", upper, "(msg)")
 		}
-		if HasUpdateMask(m.Method.Desc) && len(m.UpdateMask) > 0 {
+		if HasUpdateMask(m.Method.Desc) && (len(m.UpdateMask) > 0 || m.EmptyMask) {
 			fieldmaskpbFieldMask := f.QualifiedGoIdent(protogen.GoIdent{
 				GoName:       "FieldMask",
 				GoImportPath: "google.golang.org/protobuf/types/known/fieldmaskpb",
@@ -261,7 +263,7 @@ func (m MethodUpdate) Generate(f *protogen.GeneratedFile, request, response, err
 		} else {
 			f.P(upper, ": msg,")
 		}
-		if HasUpdateMask(m.Method.Desc) && len(m.UpdateMask) > 0 {
+		if HasUpdateMask(m.Method.Desc) && (len(m.UpdateMask) > 0 || m.EmptyMask) {
 			fieldmaskpbFieldMask := f.QualifiedGoIdent(protogen.GoIdent{
 				GoName:       "FieldMask",
 				GoImportPath: "google.golang.org/protobuf/types/known/fieldmaskpb",

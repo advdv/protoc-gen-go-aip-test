@@ -7,6 +7,8 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
 	strings "strings"
@@ -81,6 +83,9 @@ type PublisherTopicTestSuiteConfig struct {
 	CreateResource func(ctx context.Context, parent string) (*Topic, error)
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Topic
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -122,6 +127,511 @@ func (fx *PublisherTopicTestSuiteConfig) testUpdate(t *testing.T) {
 		req.SetTopic(msg)
 		_, err := fx.Service().UpdateTopic(fx.Context(), req)
 		assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+	})
+
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"labels",
+				},
+			})
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(msg, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+		t.Run("message_storage_policy", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"message_storage_policy",
+				},
+			})
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+		t.Run("kms_key_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"kms_key_name",
+				},
+			})
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_settings", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"schema_settings",
+				},
+			})
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+		t.Run("satisfies_pzs", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"satisfies_pzs",
+				},
+			})
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+		t.Run("message_retention_duration", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"message_retention_duration",
+				},
+			})
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+		t.Run("ingestion_data_source_settings", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"ingestion_data_source_settings",
+				},
+			})
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"labels",
+				},
+			})
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(&Topic{}, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+		t.Run("message_storage_policy", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "message_storage_policy")
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"message_storage_policy",
+				},
+			})
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Topic{}, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+		t.Run("kms_key_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "kms_key_name")
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"kms_key_name",
+				},
+			})
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Topic{}, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_settings", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schema_settings")
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"schema_settings",
+				},
+			})
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Topic{}, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+		t.Run("satisfies_pzs", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "satisfies_pzs")
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"satisfies_pzs",
+				},
+			})
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Topic{}, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+		t.Run("message_retention_duration", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "message_retention_duration")
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"message_retention_duration",
+				},
+			})
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Topic{}, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+		t.Run("ingestion_data_source_settings", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "ingestion_data_source_settings")
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"ingestion_data_source_settings",
+				},
+			})
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Topic{}, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("message_storage_policy", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "message_storage_policy")
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+			}
+		})
+		t.Run("kms_key_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "kms_key_name")
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_settings", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schema_settings")
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+			}
+		})
+		t.Run("satisfies_pzs", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "satisfies_pzs")
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+			}
+		})
+		t.Run("message_retention_duration", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "message_retention_duration")
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+			}
+		})
+		t.Run("ingestion_data_source_settings", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "ingestion_data_source_settings")
+			msg.SetName(created.GetName())
+			req := &UpdateTopicRequest{}
+			req.SetTopic(msg)
+			updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Topic{updated} {
+				assert.DeepEqual(t, fx.field(created, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.SetName(created.GetName())
+		req := &UpdateTopicRequest{}
+		req.SetTopic(msg)
+		req.SetUpdateMask(&fieldmaskpb.FieldMask{
+			Paths: []string{},
+		})
+		updated, err := fx.Service().UpdateTopic(fx.Context(), req)
+		assert.NilError(t, err)
+		for _, got := range []*Topic{updated} {
+			assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "message_storage_policy"), fx.field(got, "message_storage_policy"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "kms_key_name"), fx.field(got, "kms_key_name"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "schema_settings"), fx.field(got, "schema_settings"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "satisfies_pzs"), fx.field(got, "satisfies_pzs"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "ingestion_data_source_settings"), fx.field(got, "ingestion_data_source_settings"), protocmp.Transform())
+		}
 	})
 
 	{
@@ -353,6 +863,22 @@ func (fx *PublisherTopicTestSuiteConfig) notFoundName(name string) string {
 	return name + "notfound"
 }
 
+func (fx *PublisherTopicTestSuiteConfig) field(msg *Topic, name protoreflect.Name) *Topic {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Topic{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *PublisherTopicTestSuiteConfig) withoutField(msg *Topic, name protoreflect.Name) *Topic {
+	cleared := proto.Clone(msg).(*Topic)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
+}
+
 // SubscriberTestSuiteConfigProvider is the interface to implement to decide which resources
 // that should be tested and how it's configured.
 type SubscriberTestSuiteConfigProvider interface {
@@ -448,6 +974,9 @@ type SubscriberSnapshotTestSuiteConfig struct {
 	CreateResource func(ctx context.Context, parent string) (*Snapshot, error)
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Snapshot
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -489,6 +1018,219 @@ func (fx *SubscriberSnapshotTestSuiteConfig) testUpdate(t *testing.T) {
 		req.SetSnapshot(msg)
 		_, err := fx.Service().UpdateSnapshot(fx.Context(), req)
 		assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+	})
+
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("topic", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSnapshotRequest{}
+			req.SetSnapshot(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"topic",
+				},
+			})
+			updated, err := fx.Service().UpdateSnapshot(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Snapshot{updated} {
+				assert.DeepEqual(t, fx.field(msg, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("expire_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSnapshotRequest{}
+			req.SetSnapshot(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"expire_time",
+				},
+			})
+			updated, err := fx.Service().UpdateSnapshot(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Snapshot{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSnapshotRequest{}
+			req.SetSnapshot(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"labels",
+				},
+			})
+			updated, err := fx.Service().UpdateSnapshot(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Snapshot{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("topic", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "topic")
+			msg.SetName(created.GetName())
+			req := &UpdateSnapshotRequest{}
+			req.SetSnapshot(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"topic",
+				},
+			})
+			updated, err := fx.Service().UpdateSnapshot(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Snapshot{updated} {
+				assert.DeepEqual(t, fx.field(&Snapshot{}, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("expire_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "expire_time")
+			msg.SetName(created.GetName())
+			req := &UpdateSnapshotRequest{}
+			req.SetSnapshot(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"expire_time",
+				},
+			})
+			updated, err := fx.Service().UpdateSnapshot(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Snapshot{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Snapshot{}, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.SetName(created.GetName())
+			req := &UpdateSnapshotRequest{}
+			req.SetSnapshot(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"labels",
+				},
+			})
+			updated, err := fx.Service().UpdateSnapshot(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Snapshot{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Snapshot{}, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("topic", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "topic")
+			msg.SetName(created.GetName())
+			req := &UpdateSnapshotRequest{}
+			req.SetSnapshot(msg)
+			updated, err := fx.Service().UpdateSnapshot(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Snapshot{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+			}
+		})
+		t.Run("expire_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "expire_time")
+			msg.SetName(created.GetName())
+			req := &UpdateSnapshotRequest{}
+			req.SetSnapshot(msg)
+			updated, err := fx.Service().UpdateSnapshot(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Snapshot{updated} {
+				assert.DeepEqual(t, fx.field(created, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.SetName(created.GetName())
+			req := &UpdateSnapshotRequest{}
+			req.SetSnapshot(msg)
+			updated, err := fx.Service().UpdateSnapshot(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Snapshot{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.SetName(created.GetName())
+		req := &UpdateSnapshotRequest{}
+		req.SetSnapshot(msg)
+		req.SetUpdateMask(&fieldmaskpb.FieldMask{
+			Paths: []string{},
+		})
+		updated, err := fx.Service().UpdateSnapshot(fx.Context(), req)
+		assert.NilError(t, err)
+		for _, got := range []*Snapshot{updated} {
+			assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+		}
 	})
 
 	{
@@ -600,6 +1342,22 @@ func (fx *SubscriberSnapshotTestSuiteConfig) notFoundName(name string) string {
 	return name + "notfound"
 }
 
+func (fx *SubscriberSnapshotTestSuiteConfig) field(msg *Snapshot, name protoreflect.Name) *Snapshot {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Snapshot{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *SubscriberSnapshotTestSuiteConfig) withoutField(msg *Snapshot, name protoreflect.Name) *Snapshot {
+	cleared := proto.Clone(msg).(*Snapshot)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
+}
+
 type SubscriberSubscriptionTestSuiteConfig struct {
 	currParent int
 
@@ -626,6 +1384,9 @@ type SubscriberSubscriptionTestSuiteConfig struct {
 	CreateResource func(ctx context.Context, parent string) (*Subscription, error)
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Subscription
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -667,6 +1428,1253 @@ func (fx *SubscriberSubscriptionTestSuiteConfig) testUpdate(t *testing.T) {
 		req.SetSubscription(msg)
 		_, err := fx.Service().UpdateSubscription(fx.Context(), req)
 		assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+	})
+
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("topic", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"topic",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(msg, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("push_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"push_config",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("bigquery_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"bigquery_config",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("cloud_storage_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"cloud_storage_config",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("ack_deadline_seconds", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"ack_deadline_seconds",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("retain_acked_messages", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"retain_acked_messages",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("message_retention_duration", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"message_retention_duration",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"labels",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("enable_message_ordering", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"enable_message_ordering",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("expiration_policy", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"expiration_policy",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("filter", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"filter",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("dead_letter_policy", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"dead_letter_policy",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("retry_policy", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"retry_policy",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("detached", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"detached",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("enable_exactly_once_delivery", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"enable_exactly_once_delivery",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("push_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "push_config")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"push_config",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Subscription{}, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("bigquery_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "bigquery_config")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"bigquery_config",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Subscription{}, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("cloud_storage_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "cloud_storage_config")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"cloud_storage_config",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Subscription{}, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("ack_deadline_seconds", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "ack_deadline_seconds")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"ack_deadline_seconds",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Subscription{}, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("retain_acked_messages", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "retain_acked_messages")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"retain_acked_messages",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Subscription{}, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("message_retention_duration", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "message_retention_duration")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"message_retention_duration",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Subscription{}, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"labels",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Subscription{}, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("enable_message_ordering", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "enable_message_ordering")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"enable_message_ordering",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Subscription{}, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("expiration_policy", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "expiration_policy")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"expiration_policy",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Subscription{}, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("filter", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "filter")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"filter",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Subscription{}, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("dead_letter_policy", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "dead_letter_policy")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"dead_letter_policy",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Subscription{}, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("retry_policy", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "retry_policy")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"retry_policy",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Subscription{}, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("detached", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "detached")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"detached",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Subscription{}, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+		t.Run("enable_exactly_once_delivery", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "enable_exactly_once_delivery")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"enable_exactly_once_delivery",
+				},
+			})
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Subscription{}, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("topic", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "topic")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+			}
+		})
+		t.Run("push_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "push_config")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+			}
+		})
+		t.Run("bigquery_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "bigquery_config")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+			}
+		})
+		t.Run("cloud_storage_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "cloud_storage_config")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+			}
+		})
+		t.Run("ack_deadline_seconds", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "ack_deadline_seconds")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+			}
+		})
+		t.Run("retain_acked_messages", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "retain_acked_messages")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+			}
+		})
+		t.Run("message_retention_duration", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "message_retention_duration")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("enable_message_ordering", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "enable_message_ordering")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+			}
+		})
+		t.Run("expiration_policy", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "expiration_policy")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+			}
+		})
+		t.Run("filter", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "filter")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+			}
+		})
+		t.Run("dead_letter_policy", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "dead_letter_policy")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+			}
+		})
+		t.Run("retry_policy", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "retry_policy")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+			}
+		})
+		t.Run("detached", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "detached")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+			}
+		})
+		t.Run("enable_exactly_once_delivery", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "enable_exactly_once_delivery")
+			msg.SetName(created.GetName())
+			req := &UpdateSubscriptionRequest{}
+			req.SetSubscription(msg)
+			updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+			assert.NilError(t, err)
+			for _, got := range []*Subscription{updated} {
+				assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.SetName(created.GetName())
+		req := &UpdateSubscriptionRequest{}
+		req.SetSubscription(msg)
+		req.SetUpdateMask(&fieldmaskpb.FieldMask{
+			Paths: []string{},
+		})
+		updated, err := fx.Service().UpdateSubscription(fx.Context(), req)
+		assert.NilError(t, err)
+		for _, got := range []*Subscription{updated} {
+			assert.DeepEqual(t, fx.field(created, "topic"), fx.field(got, "topic"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "push_config"), fx.field(got, "push_config"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "bigquery_config"), fx.field(got, "bigquery_config"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "cloud_storage_config"), fx.field(got, "cloud_storage_config"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "ack_deadline_seconds"), fx.field(got, "ack_deadline_seconds"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "retain_acked_messages"), fx.field(got, "retain_acked_messages"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "message_retention_duration"), fx.field(got, "message_retention_duration"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "enable_message_ordering"), fx.field(got, "enable_message_ordering"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "expiration_policy"), fx.field(got, "expiration_policy"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "filter"), fx.field(got, "filter"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "dead_letter_policy"), fx.field(got, "dead_letter_policy"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "retry_policy"), fx.field(got, "retry_policy"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "detached"), fx.field(got, "detached"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "enable_exactly_once_delivery"), fx.field(got, "enable_exactly_once_delivery"), protocmp.Transform())
+		}
 	})
 
 	{
@@ -760,6 +2768,25 @@ func (fx *SubscriberSubscriptionTestSuiteConfig) testUpdate(t *testing.T) {
 			})
 		})
 
+		// For each required field that Update can change, the method should fail with
+		// InvalidArgument if an update_mask names the field and the request leaves it empty.
+		t.Run("update mask path required", func(t *testing.T) {
+			fx.maybeSkip(t)
+			t.Run("topic", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "topic")
+				req := &UpdateSubscriptionRequest{}
+				req.SetSubscription(msg)
+				req.SetUpdateMask(&fieldmaskpb.FieldMask{
+					Paths: []string{
+						"topic",
+					},
+				})
+				_, err := fx.Service().UpdateSubscription(fx.Context(), req)
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+		})
+
 	}
 }
 
@@ -839,4 +2866,20 @@ func (fx *SubscriberSubscriptionTestSuiteConfig) create(t *testing.T, parent str
 func (fx *SubscriberSubscriptionTestSuiteConfig) notFoundName(name string) string {
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *SubscriberSubscriptionTestSuiteConfig) field(msg *Subscription, name protoreflect.Name) *Subscription {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Subscription{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *SubscriberSubscriptionTestSuiteConfig) withoutField(msg *Subscription, name protoreflect.Name) *Subscription {
+	cleared := proto.Clone(msg).(*Subscription)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }

@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -80,6 +81,9 @@ type EndpointServiceEndpointTestSuiteConfig struct {
 	Create func(parent string) *Endpoint
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Endpoint
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -343,6 +347,687 @@ func (fx *EndpointServiceEndpointTestSuiteConfig) testUpdate(t *testing.T) {
 		assert.Check(t, updated.GetEtag() != created.GetEtag())
 	})
 
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"display_name",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"description",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+		t.Run("traffic_split", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"traffic_split",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"labels",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+		t.Run("encryption_spec", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"encryption_spec",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+		t.Run("network", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"network",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+		t.Run("enable_private_service_connect", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"enable_private_service_connect",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+		t.Run("predict_request_response_logging_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"predict_request_response_logging_config",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"description",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Endpoint{}, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+		t.Run("traffic_split", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "traffic_split")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"traffic_split",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Endpoint{}, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"labels",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Endpoint{}, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+		t.Run("encryption_spec", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "encryption_spec")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"encryption_spec",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Endpoint{}, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+		t.Run("network", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "network")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"network",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Endpoint{}, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+		t.Run("enable_private_service_connect", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "enable_private_service_connect")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"enable_private_service_connect",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Endpoint{}, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+		t.Run("predict_request_response_logging_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "predict_request_response_logging_config")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"predict_request_response_logging_config",
+				},
+			})
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Endpoint{}, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "display_name")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("traffic_split", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "traffic_split")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("encryption_spec", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "encryption_spec")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("network", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "network")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+			}
+		})
+		t.Run("enable_private_service_connect", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "enable_private_service_connect")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+			}
+		})
+		t.Run("predict_request_response_logging_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "predict_request_response_logging_config")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateEndpointRequest{}
+			req.SetEndpoint(msg)
+			updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetEndpointRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Endpoint{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.SetName(created.GetName())
+		msg.SetEtag(created.GetEtag())
+		req := &UpdateEndpointRequest{}
+		req.SetEndpoint(msg)
+		req.SetUpdateMask(&fieldmaskpb.FieldMask{
+			Paths: []string{},
+		})
+		updated, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+		assert.NilError(t, err)
+		getReq := &GetEndpointRequest{}
+		getReq.SetName(updated.GetName())
+		persisted, err := fx.Service().GetEndpoint(fx.Context(), getReq)
+		assert.NilError(t, err)
+		for _, got := range []*Endpoint{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "traffic_split"), fx.field(got, "traffic_split"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "network"), fx.field(got, "network"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "enable_private_service_connect"), fx.field(got, "enable_private_service_connect"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "predict_request_response_logging_config"), fx.field(got, "predict_request_response_logging_config"), protocmp.Transform())
+		}
+	})
+
 	{
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
@@ -427,6 +1112,25 @@ func (fx *EndpointServiceEndpointTestSuiteConfig) testUpdate(t *testing.T) {
 				req.SetUpdateMask(&fieldmaskpb.FieldMask{
 					Paths: []string{
 						"*",
+					},
+				})
+				_, err := fx.Service().UpdateEndpoint(fx.Context(), req)
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+		})
+
+		// For each required field that Update can change, the method should fail with
+		// InvalidArgument if an update_mask names the field and the request leaves it empty.
+		t.Run("update mask path required", func(t *testing.T) {
+			fx.maybeSkip(t)
+			t.Run("display_name", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "display_name")
+				req := &UpdateEndpointRequest{}
+				req.SetEndpoint(msg)
+				req.SetUpdateMask(&fieldmaskpb.FieldMask{
+					Paths: []string{
+						"display_name",
 					},
 				})
 				_, err := fx.Service().UpdateEndpoint(fx.Context(), req)
@@ -725,4 +1429,20 @@ func (fx *EndpointServiceEndpointTestSuiteConfig) create(t *testing.T, parent st
 func (fx *EndpointServiceEndpointTestSuiteConfig) notFoundName(name string) string {
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *EndpointServiceEndpointTestSuiteConfig) field(msg *Endpoint, name protoreflect.Name) *Endpoint {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Endpoint{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *EndpointServiceEndpointTestSuiteConfig) withoutField(msg *Endpoint, name protoreflect.Name) *Endpoint {
+	cleared := proto.Clone(msg).(*Endpoint)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }

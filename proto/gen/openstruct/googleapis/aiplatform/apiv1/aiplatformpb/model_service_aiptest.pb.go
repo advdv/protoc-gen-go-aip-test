@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -137,6 +138,9 @@ type ModelServiceModelTestSuiteConfig struct {
 	CreateResource func(ctx context.Context, parent string) (*Model, error)
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Model
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -298,6 +302,1002 @@ func (fx *ModelServiceModelTestSuiteConfig) testUpdate(t *testing.T) {
 		})
 		assert.NilError(t, err)
 		assert.Check(t, updated.Etag != created.Etag)
+	})
+
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("version_aliases", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"version_aliases",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"display_name",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("version_description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"version_description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("predict_schemata", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"predict_schemata",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("pipeline_job", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"pipeline_job",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("container_spec", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"container_spec",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("explanation_spec", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"explanation_spec",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"labels",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("data_stats", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"data_stats",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("encryption_spec", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"encryption_spec",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("version_aliases", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "version_aliases")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"version_aliases",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(&Model{}, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Model{}, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("version_description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "version_description")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"version_description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Model{}, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("predict_schemata", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "predict_schemata")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"predict_schemata",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Model{}, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("pipeline_job", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "pipeline_job")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"pipeline_job",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Model{}, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("container_spec", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "container_spec")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"container_spec",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Model{}, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("explanation_spec", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "explanation_spec")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"explanation_spec",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Model{}, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"labels",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Model{}, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("data_stats", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "data_stats")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"data_stats",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Model{}, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("encryption_spec", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "encryption_spec")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"encryption_spec",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Model{}, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("version_aliases", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "version_aliases")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+			}
+		})
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "display_name")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("version_description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "version_description")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+			}
+		})
+		t.Run("predict_schemata", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "predict_schemata")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+			}
+		})
+		t.Run("pipeline_job", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "pipeline_job")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+			}
+		})
+		t.Run("container_spec", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "container_spec")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("explanation_spec", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "explanation_spec")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("data_stats", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "data_stats")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+			}
+		})
+		t.Run("encryption_spec", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "encryption_spec")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+				Model: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Model{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.Name = created.Name
+		msg.Etag = created.Etag
+		updated, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+			Model: msg,
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{},
+			},
+		})
+		assert.NilError(t, err)
+		persisted, err := fx.Service().GetModel(fx.Context(), &GetModelRequest{
+			Name: updated.Name,
+		})
+		assert.NilError(t, err)
+		for _, got := range []*Model{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "version_aliases"), fx.field(got, "version_aliases"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "version_description"), fx.field(got, "version_description"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "predict_schemata"), fx.field(got, "predict_schemata"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "pipeline_job"), fx.field(got, "pipeline_job"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "container_spec"), fx.field(got, "container_spec"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "explanation_spec"), fx.field(got, "explanation_spec"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "data_stats"), fx.field(got, "data_stats"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "encryption_spec"), fx.field(got, "encryption_spec"), protocmp.Transform())
+		}
 	})
 
 	{
@@ -498,6 +1498,25 @@ func (fx *ModelServiceModelTestSuiteConfig) testUpdate(t *testing.T) {
 					UpdateMask: &fieldmaskpb.FieldMask{
 						Paths: []string{
 							"*",
+						},
+					},
+				})
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+		})
+
+		// For each required field that Update can change, the method should fail with
+		// InvalidArgument if an update_mask names the field and the request leaves it empty.
+		t.Run("update mask path required", func(t *testing.T) {
+			fx.maybeSkip(t)
+			t.Run("display_name", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "display_name")
+				_, err := fx.Service().UpdateModel(fx.Context(), &UpdateModelRequest{
+					Model: msg,
+					UpdateMask: &fieldmaskpb.FieldMask{
+						Paths: []string{
+							"display_name",
 						},
 					},
 				})
@@ -800,6 +1819,22 @@ func (fx *ModelServiceModelTestSuiteConfig) create(t *testing.T, parent string) 
 func (fx *ModelServiceModelTestSuiteConfig) notFoundName(name string) string {
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *ModelServiceModelTestSuiteConfig) field(msg *Model, name protoreflect.Name) *Model {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Model{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *ModelServiceModelTestSuiteConfig) withoutField(msg *Model, name protoreflect.Name) *Model {
+	cleared := proto.Clone(msg).(*Model)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }
 
 type ModelServiceModelEvaluationTestSuiteConfig struct {

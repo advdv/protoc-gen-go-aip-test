@@ -7,6 +7,7 @@ import (
 	"github.com/advdv/protoc-gen-go-aip-test/internal/suite"
 	"github.com/advdv/protoc-gen-go-aip-test/internal/util"
 	"go.einride.tech/aip/reflect/aipreflect"
+	"google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -80,6 +81,33 @@ var HasUpdateMask = onlyIf{
 		return ok && util.HasUpdateMask(method.Desc)
 	},
 	doc: "Update method has update_mask",
+}
+
+//nolint:gochecknoglobals
+var HasMutableFields = onlyIf{
+	f: func(scope suite.Scope) bool {
+		return util.HasMutableFields(scope.Message.Desc)
+	},
+	doc: "resource has any fields that Update can change",
+}
+
+// HasMutableFieldsWith is true when the resource has any field that Update can change for
+// which required is whether the field is REQUIRED.
+func HasMutableFieldsWith(required bool) suite.OnlyIf {
+	doc := "resource has any optional fields that Update can change"
+	if required {
+		doc = "resource has any required fields that Update can change"
+	}
+	return onlyIf{
+		f: func(scope suite.Scope) bool {
+			var found bool
+			util.RangeMutableFields(scope.Message.Desc, func(field protoreflect.FieldDescriptor) {
+				found = found || util.HasFieldAnnotation(field, annotations.FieldBehavior_REQUIRED) == required
+			})
+			return found
+		},
+		doc: doc,
+	}
 }
 
 //nolint:gochecknoglobals

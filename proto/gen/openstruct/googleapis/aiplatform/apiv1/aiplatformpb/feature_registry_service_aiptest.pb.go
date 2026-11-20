@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -114,6 +115,9 @@ type FeatureRegistryServiceFeatureTestSuiteConfig struct {
 	IDGenerator func() string
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Feature
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -608,6 +612,22 @@ func (fx *FeatureRegistryServiceFeatureTestSuiteConfig) notFoundName(name string
 	return name + "notfound"
 }
 
+func (fx *FeatureRegistryServiceFeatureTestSuiteConfig) field(msg *Feature, name protoreflect.Name) *Feature {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Feature{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *FeatureRegistryServiceFeatureTestSuiteConfig) withoutField(msg *Feature, name protoreflect.Name) *Feature {
+	cleared := proto.Clone(msg).(*Feature)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
+}
+
 type FeatureRegistryServiceFeatureGroupTestSuiteConfig struct {
 	currParent int
 
@@ -638,6 +658,9 @@ type FeatureRegistryServiceFeatureGroupTestSuiteConfig struct {
 	IDGenerator func() string
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *FeatureGroup
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -1203,4 +1226,20 @@ func (fx *FeatureRegistryServiceFeatureGroupTestSuiteConfig) notFoundName(name s
 	}
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *FeatureRegistryServiceFeatureGroupTestSuiteConfig) field(msg *FeatureGroup, name protoreflect.Name) *FeatureGroup {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &FeatureGroup{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *FeatureRegistryServiceFeatureGroupTestSuiteConfig) withoutField(msg *FeatureGroup, name protoreflect.Name) *FeatureGroup {
+	cleared := proto.Clone(msg).(*FeatureGroup)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }

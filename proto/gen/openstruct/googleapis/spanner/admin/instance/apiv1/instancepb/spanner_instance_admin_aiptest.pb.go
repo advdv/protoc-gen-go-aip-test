@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -134,6 +135,9 @@ type InstanceAdminInstanceTestSuiteConfig struct {
 	Create func(parent string) *Instance
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Instance
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -848,6 +852,9 @@ type InstanceAdminInstanceConfigTestSuiteConfig struct {
 	Create func(parent string) *InstanceConfig
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *InstanceConfig
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -1370,6 +1377,22 @@ func (fx *InstanceAdminInstanceConfigTestSuiteConfig) notFoundName(name string) 
 	return name + "notfound"
 }
 
+func (fx *InstanceAdminInstanceConfigTestSuiteConfig) field(msg *InstanceConfig, name protoreflect.Name) *InstanceConfig {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &InstanceConfig{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *InstanceAdminInstanceConfigTestSuiteConfig) withoutField(msg *InstanceConfig, name protoreflect.Name) *InstanceConfig {
+	cleared := proto.Clone(msg).(*InstanceConfig)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
+}
+
 type InstanceAdminInstancePartitionTestSuiteConfig struct {
 	currParent int
 
@@ -1393,6 +1416,9 @@ type InstanceAdminInstancePartitionTestSuiteConfig struct {
 	Create func(parent string) *InstancePartition
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *InstancePartition
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.

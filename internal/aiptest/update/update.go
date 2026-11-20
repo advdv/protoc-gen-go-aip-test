@@ -20,6 +20,10 @@ var Suite = suite.Suite{
 		preserveCreateTime,
 		etagMismatch,
 		etagUpdated,
+		updateMaskPath,
+		updateMaskPathClears,
+		updateMaskUnset,
+		updateMaskEmpty,
 	},
 	TestGroups: []suite.TestGroup{
 		withResourceGroup,
@@ -41,6 +45,7 @@ var withResourceGroup = suite.TestGroup{
 		notFound,
 		invalidUpdateMask,
 		requiredFields,
+		updateMaskPathRequired,
 		// TODO: add test for supplying wildcard as name
 	},
 }

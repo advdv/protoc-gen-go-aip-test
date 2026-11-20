@@ -18,4 +18,10 @@ const (
 	// FixtureUserSettableID returns a new user settable ID: the IDGenerator's when set,
 	// else the fallback it is passed.
 	FixtureUserSettableID = "fx.userSettableID"
+	// FixtureField returns a new resource with only one field of a resource set, the one with
+	// the name it is passed, for the tests to compare one field.
+	FixtureField = "fx.field"
+	// FixtureWithoutField returns a copy of a resource with one field cleared, the one with the
+	// name it is passed.
+	FixtureWithoutField = "fx.withoutField"
 )

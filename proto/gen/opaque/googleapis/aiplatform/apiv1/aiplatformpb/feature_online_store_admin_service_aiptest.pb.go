@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -134,6 +135,9 @@ type FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig struct {
 	Create func(parent string) *FeatureOnlineStore
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *FeatureOnlineStore
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -724,6 +728,22 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) notFo
 	return name + "notfound"
 }
 
+func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) field(msg *FeatureOnlineStore, name protoreflect.Name) *FeatureOnlineStore {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &FeatureOnlineStore{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *FeatureOnlineStoreAdminServiceFeatureOnlineStoreTestSuiteConfig) withoutField(msg *FeatureOnlineStore, name protoreflect.Name) *FeatureOnlineStore {
+	cleared := proto.Clone(msg).(*FeatureOnlineStore)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
+}
+
 type FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig struct {
 	currParent int
 
@@ -747,6 +767,9 @@ type FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig struct {
 	Create func(parent string) *FeatureView
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *FeatureView
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -1335,6 +1358,22 @@ func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) create(t *te
 func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) notFoundName(name string) string {
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) field(msg *FeatureView, name protoreflect.Name) *FeatureView {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &FeatureView{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *FeatureOnlineStoreAdminServiceFeatureViewTestSuiteConfig) withoutField(msg *FeatureView, name protoreflect.Name) *FeatureView {
+	cleared := proto.Clone(msg).(*FeatureView)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }
 
 type FeatureOnlineStoreAdminServiceFeatureViewSyncTestSuiteConfig struct {

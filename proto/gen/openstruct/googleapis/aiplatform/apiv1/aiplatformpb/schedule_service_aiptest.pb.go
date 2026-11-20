@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -81,6 +82,9 @@ type ScheduleServiceScheduleTestSuiteConfig struct {
 	Create func(parent string) *Schedule
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Schedule
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -422,6 +426,632 @@ func (fx *ScheduleServiceScheduleTestSuiteConfig) testUpdate(t *testing.T) {
 		assert.DeepEqual(t, originalCreateTime, updated.CreateTime, protocmp.Transform())
 	})
 
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("cron", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"cron",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "cron"), fx.field(got, "cron"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+		t.Run("create_pipeline_job_request", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"create_pipeline_job_request",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "cron"), fx.field(got, "cron"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"display_name",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "cron"), fx.field(got, "cron"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+		t.Run("start_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"start_time",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "cron"), fx.field(got, "cron"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+		t.Run("end_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"end_time",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "cron"), fx.field(got, "cron"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+		t.Run("max_run_count", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"max_run_count",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "cron"), fx.field(got, "cron"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+		t.Run("max_concurrent_run_count", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"max_concurrent_run_count",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "cron"), fx.field(got, "cron"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+		t.Run("allow_queueing", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"allow_queueing",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "cron"), fx.field(got, "cron"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("cron", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "cron")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"cron",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(&Schedule{}, "cron"), fx.field(got, "cron"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+		t.Run("create_pipeline_job_request", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "create_pipeline_job_request")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"create_pipeline_job_request",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "cron"), fx.field(got, "cron"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Schedule{}, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+		t.Run("start_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "start_time")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"start_time",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "cron"), fx.field(got, "cron"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Schedule{}, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+		t.Run("end_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "end_time")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"end_time",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "cron"), fx.field(got, "cron"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Schedule{}, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+		t.Run("max_run_count", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "max_run_count")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"max_run_count",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "cron"), fx.field(got, "cron"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Schedule{}, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+		t.Run("allow_queueing", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "allow_queueing")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"allow_queueing",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "cron"), fx.field(got, "cron"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Schedule{}, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("cron", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "cron")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "cron"), fx.field(got, "cron"), protocmp.Transform())
+			}
+		})
+		t.Run("create_pipeline_job_request", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "create_pipeline_job_request")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+			}
+		})
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "display_name")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			}
+		})
+		t.Run("start_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "start_time")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+			}
+		})
+		t.Run("end_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "end_time")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+			}
+		})
+		t.Run("max_run_count", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "max_run_count")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+			}
+		})
+		t.Run("max_concurrent_run_count", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "max_concurrent_run_count")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+			}
+		})
+		t.Run("allow_queueing", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "allow_queueing")
+			msg.Name = created.Name
+			updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+				Schedule: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Schedule{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.Name = created.Name
+		updated, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+			Schedule: msg,
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{},
+			},
+		})
+		assert.NilError(t, err)
+		persisted, err := fx.Service().GetSchedule(fx.Context(), &GetScheduleRequest{
+			Name: updated.Name,
+		})
+		assert.NilError(t, err)
+		for _, got := range []*Schedule{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "cron"), fx.field(got, "cron"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "create_pipeline_job_request"), fx.field(got, "create_pipeline_job_request"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "start_time"), fx.field(got, "start_time"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "end_time"), fx.field(got, "end_time"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "max_run_count"), fx.field(got, "max_run_count"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "max_concurrent_run_count"), fx.field(got, "max_concurrent_run_count"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "allow_queueing"), fx.field(got, "allow_queueing"), protocmp.Transform())
+		}
+	})
+
 	{
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
@@ -563,6 +1193,38 @@ func (fx *ScheduleServiceScheduleTestSuiteConfig) testUpdate(t *testing.T) {
 					UpdateMask: &fieldmaskpb.FieldMask{
 						Paths: []string{
 							"*",
+						},
+					},
+				})
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+		})
+
+		// For each required field that Update can change, the method should fail with
+		// InvalidArgument if an update_mask names the field and the request leaves it empty.
+		t.Run("update mask path required", func(t *testing.T) {
+			fx.maybeSkip(t)
+			t.Run("display_name", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "display_name")
+				_, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+					Schedule: msg,
+					UpdateMask: &fieldmaskpb.FieldMask{
+						Paths: []string{
+							"display_name",
+						},
+					},
+				})
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+			t.Run("max_concurrent_run_count", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "max_concurrent_run_count")
+				_, err := fx.Service().UpdateSchedule(fx.Context(), &UpdateScheduleRequest{
+					Schedule: msg,
+					UpdateMask: &fieldmaskpb.FieldMask{
+						Paths: []string{
+							"max_concurrent_run_count",
 						},
 					},
 				})
@@ -865,4 +1527,20 @@ func (fx *ScheduleServiceScheduleTestSuiteConfig) create(t *testing.T, parent st
 func (fx *ScheduleServiceScheduleTestSuiteConfig) notFoundName(name string) string {
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *ScheduleServiceScheduleTestSuiteConfig) field(msg *Schedule, name protoreflect.Name) *Schedule {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Schedule{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *ScheduleServiceScheduleTestSuiteConfig) withoutField(msg *Schedule, name protoreflect.Name) *Schedule {
+	cleared := proto.Clone(msg).(*Schedule)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }

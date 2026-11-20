@@ -32,7 +32,44 @@ func (r *resourceGenerator) Generate(f *protogen.GeneratedFile) error {
 	r.generateCreate(f)
 	r.generateUserSettableID(f)
 	r.generateNotFoundName(f)
+	r.generateFieldHelpers(f)
 	return nil
+}
+
+// generateFieldHelpers generates the helpers that the tests of update masks use to clear and
+// compare one field of a resource.
+func (r *resourceGenerator) generateFieldHelpers(f *protogen.GeneratedFile) {
+	updateMethod, hasUpdate := util.StandardMethod(r.service, r.resource, aipreflect.MethodTypeUpdate)
+	if !hasUpdate || !util.HasUpdateMask(updateMethod.Desc) {
+		return
+	}
+	protoreflectName := f.QualifiedGoIdent(protogen.GoIdent{
+		GoName:       "Name",
+		GoImportPath: "google.golang.org/protobuf/reflect/protoreflect",
+	})
+	fixtureName := resourceTestSuiteConfigName(r.service.Desc, r.resource)
+	f.P()
+	f.P(
+		"func (fx *", fixtureName, ") field(msg *", r.message.GoIdent,
+		", name ", protoreflectName, ") *", r.message.GoIdent, " {",
+	)
+	f.P("msg = fx.normalize(msg)")
+	f.P("fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)")
+	f.P("only := &", r.message.GoIdent, "{}")
+	f.P("if msg.ProtoReflect().Has(fd) {")
+	f.P("only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))")
+	f.P("}")
+	f.P("return only")
+	f.P("}")
+	f.P()
+	f.P(
+		"func (fx *", fixtureName, ") withoutField(msg *", r.message.GoIdent,
+		", name ", protoreflectName, ") *", r.message.GoIdent, " {",
+	)
+	f.P("cleared := ", ident.ProtoClone, "(msg).(*", r.message.GoIdent, ")")
+	f.P("cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))")
+	f.P("return cleared")
+	f.P("}")
 }
 
 func (r *resourceGenerator) generateFixture(f *protogen.GeneratedFile) {
@@ -98,6 +135,9 @@ func (r *resourceGenerator) generateFixture(f *protogen.GeneratedFile) {
 	if hasUpdate {
 		f.P("// Update should return a resource which is valid to update, i.e.")
 		f.P("// all required fields set.")
+		f.P("// The tests of update masks compare each field that Update can change with the")
+		f.P("// value it had after Create, so they find most when Create and Update set each")
+		f.P("// such field, to different values.")
 		if util.HasParent(r.resource) {
 			f.P("Update func(parent string) *", r.message.GoIdent)
 		} else {

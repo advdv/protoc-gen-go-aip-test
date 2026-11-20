@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -134,6 +135,9 @@ type DatabaseAdminBackupTestSuiteConfig struct {
 	Create func(parent string) *Backup
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Backup
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -294,6 +298,259 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) testUpdate(t *testing.T) {
 		persisted, err := fx.Service().GetBackup(fx.Context(), getReq)
 		assert.NilError(t, err)
 		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
+	})
+
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("database", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateBackupRequest{}
+			req.SetBackup(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"database",
+				},
+			})
+			updated, err := fx.Service().UpdateBackup(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetBackupRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetBackup(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Backup{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "database"), fx.field(got, "database"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_time"), fx.field(got, "version_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+			}
+		})
+		t.Run("version_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateBackupRequest{}
+			req.SetBackup(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"version_time",
+				},
+			})
+			updated, err := fx.Service().UpdateBackup(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetBackupRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetBackup(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Backup{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "database"), fx.field(got, "database"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "version_time"), fx.field(got, "version_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+			}
+		})
+		t.Run("expire_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateBackupRequest{}
+			req.SetBackup(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"expire_time",
+				},
+			})
+			updated, err := fx.Service().UpdateBackup(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetBackupRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetBackup(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Backup{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "database"), fx.field(got, "database"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_time"), fx.field(got, "version_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("database", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "database")
+			msg.SetName(created.GetName())
+			req := &UpdateBackupRequest{}
+			req.SetBackup(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"database",
+				},
+			})
+			updated, err := fx.Service().UpdateBackup(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetBackupRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetBackup(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Backup{updated, persisted} {
+				assert.DeepEqual(t, fx.field(&Backup{}, "database"), fx.field(got, "database"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_time"), fx.field(got, "version_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+			}
+		})
+		t.Run("version_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "version_time")
+			msg.SetName(created.GetName())
+			req := &UpdateBackupRequest{}
+			req.SetBackup(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"version_time",
+				},
+			})
+			updated, err := fx.Service().UpdateBackup(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetBackupRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetBackup(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Backup{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "database"), fx.field(got, "database"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Backup{}, "version_time"), fx.field(got, "version_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+			}
+		})
+		t.Run("expire_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "expire_time")
+			msg.SetName(created.GetName())
+			req := &UpdateBackupRequest{}
+			req.SetBackup(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"expire_time",
+				},
+			})
+			updated, err := fx.Service().UpdateBackup(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetBackupRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetBackup(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Backup{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "database"), fx.field(got, "database"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_time"), fx.field(got, "version_time"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Backup{}, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("database", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "database")
+			msg.SetName(created.GetName())
+			req := &UpdateBackupRequest{}
+			req.SetBackup(msg)
+			updated, err := fx.Service().UpdateBackup(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetBackupRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetBackup(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Backup{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "database"), fx.field(got, "database"), protocmp.Transform())
+			}
+		})
+		t.Run("version_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "version_time")
+			msg.SetName(created.GetName())
+			req := &UpdateBackupRequest{}
+			req.SetBackup(msg)
+			updated, err := fx.Service().UpdateBackup(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetBackupRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetBackup(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Backup{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_time"), fx.field(got, "version_time"), protocmp.Transform())
+			}
+		})
+		t.Run("expire_time", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "expire_time")
+			msg.SetName(created.GetName())
+			req := &UpdateBackupRequest{}
+			req.SetBackup(msg)
+			updated, err := fx.Service().UpdateBackup(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetBackupRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetBackup(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Backup{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.SetName(created.GetName())
+		req := &UpdateBackupRequest{}
+		req.SetBackup(msg)
+		req.SetUpdateMask(&fieldmaskpb.FieldMask{
+			Paths: []string{},
+		})
+		updated, err := fx.Service().UpdateBackup(fx.Context(), req)
+		assert.NilError(t, err)
+		getReq := &GetBackupRequest{}
+		getReq.SetName(updated.GetName())
+		persisted, err := fx.Service().GetBackup(fx.Context(), getReq)
+		assert.NilError(t, err)
+		for _, got := range []*Backup{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "database"), fx.field(got, "database"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "version_time"), fx.field(got, "version_time"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "expire_time"), fx.field(got, "expire_time"), protocmp.Transform())
+		}
 	})
 
 	{
@@ -633,6 +890,22 @@ func (fx *DatabaseAdminBackupTestSuiteConfig) notFoundName(name string) string {
 	return name + "notfound"
 }
 
+func (fx *DatabaseAdminBackupTestSuiteConfig) field(msg *Backup, name protoreflect.Name) *Backup {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Backup{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *DatabaseAdminBackupTestSuiteConfig) withoutField(msg *Backup, name protoreflect.Name) *Backup {
+	cleared := proto.Clone(msg).(*Backup)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
+}
+
 type DatabaseAdminDatabaseTestSuiteConfig struct {
 	currParent int
 
@@ -659,6 +932,9 @@ type DatabaseAdminDatabaseTestSuiteConfig struct {
 	CreateResource func(ctx context.Context, parent string) (*Database, error)
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Database
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -1018,6 +1294,22 @@ func (fx *DatabaseAdminDatabaseTestSuiteConfig) create(t *testing.T, parent stri
 func (fx *DatabaseAdminDatabaseTestSuiteConfig) notFoundName(name string) string {
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *DatabaseAdminDatabaseTestSuiteConfig) field(msg *Database, name protoreflect.Name) *Database {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Database{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *DatabaseAdminDatabaseTestSuiteConfig) withoutField(msg *Database, name protoreflect.Name) *Database {
+	cleared := proto.Clone(msg).(*Database)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }
 
 type DatabaseAdminDatabaseRoleTestSuiteConfig struct {

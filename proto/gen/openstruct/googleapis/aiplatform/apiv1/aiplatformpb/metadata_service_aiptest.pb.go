@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -189,6 +190,9 @@ type MetadataServiceArtifactTestSuiteConfig struct {
 	Create func(parent string) *Artifact
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Artifact
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -413,6 +417,719 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) testUpdate(t *testing.T) {
 		})
 		assert.NilError(t, err)
 		assert.Check(t, updated.Etag != created.Etag)
+	})
+
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"display_name",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("uri", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"uri",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"labels",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("state", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"state",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_title", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schema_title",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_version", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schema_version",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("metadata", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"metadata",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "display_name")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"display_name",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(&Artifact{}, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("uri", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "uri")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"uri",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Artifact{}, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"labels",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Artifact{}, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("state", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "state")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"state",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Artifact{}, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_title", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schema_title")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schema_title",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Artifact{}, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_version", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schema_version")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schema_version",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Artifact{}, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("metadata", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "metadata")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"metadata",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Artifact{}, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Artifact{}, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "display_name")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			}
+		})
+		t.Run("uri", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "uri")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("state", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "state")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_title", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schema_title")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_version", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schema_version")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+			}
+		})
+		t.Run("metadata", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "metadata")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+				Artifact: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Artifact{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.Name = created.Name
+		msg.Etag = created.Etag
+		updated, err := fx.Service().UpdateArtifact(fx.Context(), &UpdateArtifactRequest{
+			Artifact: msg,
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{},
+			},
+		})
+		assert.NilError(t, err)
+		persisted, err := fx.Service().GetArtifact(fx.Context(), &GetArtifactRequest{
+			Name: updated.Name,
+		})
+		assert.NilError(t, err)
+		for _, got := range []*Artifact{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "uri"), fx.field(got, "uri"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+		}
 	})
 
 	{
@@ -752,6 +1469,22 @@ func (fx *MetadataServiceArtifactTestSuiteConfig) notFoundName(name string) stri
 	return name + "notfound"
 }
 
+func (fx *MetadataServiceArtifactTestSuiteConfig) field(msg *Artifact, name protoreflect.Name) *Artifact {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Artifact{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *MetadataServiceArtifactTestSuiteConfig) withoutField(msg *Artifact, name protoreflect.Name) *Artifact {
+	cleared := proto.Clone(msg).(*Artifact)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
+}
+
 type MetadataServiceContextTestSuiteConfig struct {
 	currParent int
 
@@ -775,6 +1508,9 @@ type MetadataServiceContextTestSuiteConfig struct {
 	Create func(parent string) *Context
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Context
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -999,6 +1735,527 @@ func (fx *MetadataServiceContextTestSuiteConfig) testUpdate(t *testing.T) {
 		})
 		assert.NilError(t, err)
 		assert.Check(t, updated.Etag != created.Etag)
+	})
+
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"display_name",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"labels",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_title", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schema_title",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_version", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schema_version",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("metadata", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"metadata",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "display_name")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"display_name",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(&Context{}, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"labels",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Context{}, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_title", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schema_title")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schema_title",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Context{}, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_version", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schema_version")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schema_version",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Context{}, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("metadata", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "metadata")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"metadata",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Context{}, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Context{}, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "display_name")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_title", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schema_title")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_version", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schema_version")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+			}
+		})
+		t.Run("metadata", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "metadata")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+				Context: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Context{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.Name = created.Name
+		msg.Etag = created.Etag
+		updated, err := fx.Service().UpdateContext(fx.Context(), &UpdateContextRequest{
+			Context: msg,
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{},
+			},
+		})
+		assert.NilError(t, err)
+		persisted, err := fx.Service().GetContext(fx.Context(), &GetContextRequest{
+			Name: updated.Name,
+		})
+		assert.NilError(t, err)
+		for _, got := range []*Context{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+		}
 	})
 
 	{
@@ -1338,6 +2595,22 @@ func (fx *MetadataServiceContextTestSuiteConfig) notFoundName(name string) strin
 	return name + "notfound"
 }
 
+func (fx *MetadataServiceContextTestSuiteConfig) field(msg *Context, name protoreflect.Name) *Context {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Context{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *MetadataServiceContextTestSuiteConfig) withoutField(msg *Context, name protoreflect.Name) *Context {
+	cleared := proto.Clone(msg).(*Context)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
+}
+
 type MetadataServiceExecutionTestSuiteConfig struct {
 	currParent int
 
@@ -1361,6 +2634,9 @@ type MetadataServiceExecutionTestSuiteConfig struct {
 	Create func(parent string) *Execution
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Execution
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -1585,6 +2861,621 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) testUpdate(t *testing.T) {
 		})
 		assert.NilError(t, err)
 		assert.Check(t, updated.Etag != created.Etag)
+	})
+
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"display_name",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("state", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"state",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"labels",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_title", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schema_title",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_version", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schema_version",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("metadata", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"metadata",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "display_name")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"display_name",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(&Execution{}, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("state", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "state")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"state",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Execution{}, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"labels",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Execution{}, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_title", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schema_title")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schema_title",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Execution{}, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_version", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schema_version")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"schema_version",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Execution{}, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("metadata", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "metadata")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"metadata",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Execution{}, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Execution{}, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "display_name")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			}
+		})
+		t.Run("state", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "state")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_title", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schema_title")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+			}
+		})
+		t.Run("schema_version", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "schema_version")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+			}
+		})
+		t.Run("metadata", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "metadata")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+				Execution: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Execution{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.Name = created.Name
+		msg.Etag = created.Etag
+		updated, err := fx.Service().UpdateExecution(fx.Context(), &UpdateExecutionRequest{
+			Execution: msg,
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{},
+			},
+		})
+		assert.NilError(t, err)
+		persisted, err := fx.Service().GetExecution(fx.Context(), &GetExecutionRequest{
+			Name: updated.Name,
+		})
+		assert.NilError(t, err)
+		for _, got := range []*Execution{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "state"), fx.field(got, "state"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "schema_title"), fx.field(got, "schema_title"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "schema_version"), fx.field(got, "schema_version"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "metadata"), fx.field(got, "metadata"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+		}
 	})
 
 	{
@@ -1922,6 +3813,22 @@ func (fx *MetadataServiceExecutionTestSuiteConfig) create(t *testing.T, parent s
 func (fx *MetadataServiceExecutionTestSuiteConfig) notFoundName(name string) string {
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *MetadataServiceExecutionTestSuiteConfig) field(msg *Execution, name protoreflect.Name) *Execution {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Execution{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *MetadataServiceExecutionTestSuiteConfig) withoutField(msg *Execution, name protoreflect.Name) *Execution {
+	cleared := proto.Clone(msg).(*Execution)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }
 
 type MetadataServiceMetadataSchemaTestSuiteConfig struct {

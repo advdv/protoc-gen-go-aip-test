@@ -191,6 +191,30 @@ func RangeRequiredFields(
 	)
 }
 
+// RangeMutableFields calls f for each top-level field of a resource that an Update method can
+// change: every field but the resource name, the etag, and fields that are IDENTIFIER,
+// OUTPUT_ONLY, or IMMUTABLE.
+func RangeMutableFields(message protoreflect.MessageDescriptor, f func(protoreflect.FieldDescriptor)) {
+	for i := 0; i < message.Fields().Len(); i++ {
+		field := message.Fields().Get(i)
+		switch {
+		case field.Name() == "name", field.Name() == "etag",
+			fieldbehavior.Has(field, annotations.FieldBehavior_IDENTIFIER),
+			fieldbehavior.Has(field, annotations.FieldBehavior_OUTPUT_ONLY),
+			fieldbehavior.Has(field, annotations.FieldBehavior_IMMUTABLE):
+			continue
+		}
+		f(field)
+	}
+}
+
+// HasMutableFields reports whether a resource has any field that an Update method can change.
+func HasMutableFields(message protoreflect.MessageDescriptor) bool {
+	var found bool
+	RangeMutableFields(message, func(protoreflect.FieldDescriptor) { found = true })
+	return found
+}
+
 func HasMutableResourceReferences(message protoreflect.MessageDescriptor) bool {
 	var found bool
 	RangeMutableResourceReferences(

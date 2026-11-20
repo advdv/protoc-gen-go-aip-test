@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -134,6 +135,9 @@ type TablesServiceRowTestSuiteConfig struct {
 	Create func(parent string) *Row
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Row
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -289,6 +293,113 @@ func (fx *TablesServiceRowTestSuiteConfig) testUpdate(t *testing.T) {
 		persisted, err := fx.Service().GetRow(fx.Context(), getReq)
 		assert.NilError(t, err)
 		assert.DeepEqual(t, fx.normalize(updated), fx.normalize(persisted), protocmp.Transform())
+	})
+
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("values", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			req := &UpdateRowRequest{}
+			req.SetRow(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"values",
+				},
+			})
+			updated, err := fx.Service().UpdateRow(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetRowRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetRow(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Row{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "values"), fx.field(got, "values"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("values", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "values")
+			msg.SetName(created.GetName())
+			req := &UpdateRowRequest{}
+			req.SetRow(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"values",
+				},
+			})
+			updated, err := fx.Service().UpdateRow(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetRowRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetRow(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Row{updated, persisted} {
+				assert.DeepEqual(t, fx.field(&Row{}, "values"), fx.field(got, "values"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("values", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "values")
+			msg.SetName(created.GetName())
+			req := &UpdateRowRequest{}
+			req.SetRow(msg)
+			updated, err := fx.Service().UpdateRow(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetRowRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetRow(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*Row{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "values"), fx.field(got, "values"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.SetName(created.GetName())
+		req := &UpdateRowRequest{}
+		req.SetRow(msg)
+		req.SetUpdateMask(&fieldmaskpb.FieldMask{
+			Paths: []string{},
+		})
+		updated, err := fx.Service().UpdateRow(fx.Context(), req)
+		assert.NilError(t, err)
+		getReq := &GetRowRequest{}
+		getReq.SetName(updated.GetName())
+		persisted, err := fx.Service().GetRow(fx.Context(), getReq)
+		assert.NilError(t, err)
+		for _, got := range []*Row{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "values"), fx.field(got, "values"), protocmp.Transform())
+		}
 	})
 
 	{
@@ -630,6 +741,22 @@ func (fx *TablesServiceRowTestSuiteConfig) create(t *testing.T, parent string) *
 func (fx *TablesServiceRowTestSuiteConfig) notFoundName(name string) string {
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *TablesServiceRowTestSuiteConfig) field(msg *Row, name protoreflect.Name) *Row {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Row{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *TablesServiceRowTestSuiteConfig) withoutField(msg *Row, name protoreflect.Name) *Row {
+	cleared := proto.Clone(msg).(*Row)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }
 
 type TablesServiceTableTestSuiteConfig struct {

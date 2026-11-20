@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -2887,6 +2888,9 @@ type JobServiceModelDeploymentMonitoringJobTestSuiteConfig struct {
 	Create func(parent string) *ModelDeploymentMonitoringJob
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *ModelDeploymentMonitoringJob
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -3400,6 +3404,77 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) testUpdate(t *t
 			})
 		})
 
+		// For each required field that Update can change, the method should fail with
+		// InvalidArgument if an update_mask names the field and the request leaves it empty.
+		t.Run("update mask path required", func(t *testing.T) {
+			fx.maybeSkip(t)
+			t.Run("display_name", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "display_name")
+				_, err := fx.Service().UpdateModelDeploymentMonitoringJob(fx.Context(), &UpdateModelDeploymentMonitoringJobRequest{
+					ModelDeploymentMonitoringJob: msg,
+					UpdateMask: &fieldmaskpb.FieldMask{
+						Paths: []string{
+							"display_name",
+						},
+					},
+				})
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+			t.Run("endpoint", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "endpoint")
+				_, err := fx.Service().UpdateModelDeploymentMonitoringJob(fx.Context(), &UpdateModelDeploymentMonitoringJobRequest{
+					ModelDeploymentMonitoringJob: msg,
+					UpdateMask: &fieldmaskpb.FieldMask{
+						Paths: []string{
+							"endpoint",
+						},
+					},
+				})
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+			t.Run("model_deployment_monitoring_objective_configs", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "model_deployment_monitoring_objective_configs")
+				_, err := fx.Service().UpdateModelDeploymentMonitoringJob(fx.Context(), &UpdateModelDeploymentMonitoringJobRequest{
+					ModelDeploymentMonitoringJob: msg,
+					UpdateMask: &fieldmaskpb.FieldMask{
+						Paths: []string{
+							"model_deployment_monitoring_objective_configs",
+						},
+					},
+				})
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+			t.Run("model_deployment_monitoring_schedule_config", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "model_deployment_monitoring_schedule_config")
+				_, err := fx.Service().UpdateModelDeploymentMonitoringJob(fx.Context(), &UpdateModelDeploymentMonitoringJobRequest{
+					ModelDeploymentMonitoringJob: msg,
+					UpdateMask: &fieldmaskpb.FieldMask{
+						Paths: []string{
+							"model_deployment_monitoring_schedule_config",
+						},
+					},
+				})
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+			t.Run("logging_sampling_strategy", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "logging_sampling_strategy")
+				_, err := fx.Service().UpdateModelDeploymentMonitoringJob(fx.Context(), &UpdateModelDeploymentMonitoringJobRequest{
+					ModelDeploymentMonitoringJob: msg,
+					UpdateMask: &fieldmaskpb.FieldMask{
+						Paths: []string{
+							"logging_sampling_strategy",
+						},
+					},
+				})
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+		})
+
 	}
 }
 
@@ -3695,6 +3770,22 @@ func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) create(t *testi
 func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) notFoundName(name string) string {
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) field(msg *ModelDeploymentMonitoringJob, name protoreflect.Name) *ModelDeploymentMonitoringJob {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &ModelDeploymentMonitoringJob{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *JobServiceModelDeploymentMonitoringJobTestSuiteConfig) withoutField(msg *ModelDeploymentMonitoringJob, name protoreflect.Name) *ModelDeploymentMonitoringJob {
+	cleared := proto.Clone(msg).(*ModelDeploymentMonitoringJob)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }
 
 type JobServiceNasJobTestSuiteConfig struct {

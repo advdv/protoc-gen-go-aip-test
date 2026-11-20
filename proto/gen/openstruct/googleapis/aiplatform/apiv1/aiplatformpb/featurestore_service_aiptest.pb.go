@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -134,6 +135,9 @@ type FeaturestoreServiceEntityTypeTestSuiteConfig struct {
 	Create func(parent string) *EntityType
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *EntityType
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -302,6 +306,351 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) testUpdate(t *testing.T)
 		})
 		assert.NilError(t, err)
 		assert.Check(t, updated.Etag != created.Etag)
+	})
+
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateEntityType(fx.Context(), &UpdateEntityTypeRequest{
+				EntityType: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetEntityType(fx.Context(), &GetEntityTypeRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*EntityType{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "monitoring_config"), fx.field(got, "monitoring_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "offline_storage_ttl_days"), fx.field(got, "offline_storage_ttl_days"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateEntityType(fx.Context(), &UpdateEntityTypeRequest{
+				EntityType: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"labels",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetEntityType(fx.Context(), &GetEntityTypeRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*EntityType{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "monitoring_config"), fx.field(got, "monitoring_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "offline_storage_ttl_days"), fx.field(got, "offline_storage_ttl_days"), protocmp.Transform())
+			}
+		})
+		t.Run("monitoring_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateEntityType(fx.Context(), &UpdateEntityTypeRequest{
+				EntityType: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"monitoring_config",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetEntityType(fx.Context(), &GetEntityTypeRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*EntityType{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "monitoring_config"), fx.field(got, "monitoring_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "offline_storage_ttl_days"), fx.field(got, "offline_storage_ttl_days"), protocmp.Transform())
+			}
+		})
+		t.Run("offline_storage_ttl_days", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateEntityType(fx.Context(), &UpdateEntityTypeRequest{
+				EntityType: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"offline_storage_ttl_days",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetEntityType(fx.Context(), &GetEntityTypeRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*EntityType{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "monitoring_config"), fx.field(got, "monitoring_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "offline_storage_ttl_days"), fx.field(got, "offline_storage_ttl_days"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateEntityType(fx.Context(), &UpdateEntityTypeRequest{
+				EntityType: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetEntityType(fx.Context(), &GetEntityTypeRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*EntityType{updated, persisted} {
+				assert.DeepEqual(t, fx.field(&EntityType{}, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "monitoring_config"), fx.field(got, "monitoring_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "offline_storage_ttl_days"), fx.field(got, "offline_storage_ttl_days"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateEntityType(fx.Context(), &UpdateEntityTypeRequest{
+				EntityType: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"labels",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetEntityType(fx.Context(), &GetEntityTypeRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*EntityType{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&EntityType{}, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "monitoring_config"), fx.field(got, "monitoring_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "offline_storage_ttl_days"), fx.field(got, "offline_storage_ttl_days"), protocmp.Transform())
+			}
+		})
+		t.Run("monitoring_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "monitoring_config")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateEntityType(fx.Context(), &UpdateEntityTypeRequest{
+				EntityType: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"monitoring_config",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetEntityType(fx.Context(), &GetEntityTypeRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*EntityType{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&EntityType{}, "monitoring_config"), fx.field(got, "monitoring_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "offline_storage_ttl_days"), fx.field(got, "offline_storage_ttl_days"), protocmp.Transform())
+			}
+		})
+		t.Run("offline_storage_ttl_days", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "offline_storage_ttl_days")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateEntityType(fx.Context(), &UpdateEntityTypeRequest{
+				EntityType: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"offline_storage_ttl_days",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetEntityType(fx.Context(), &GetEntityTypeRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*EntityType{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "monitoring_config"), fx.field(got, "monitoring_config"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&EntityType{}, "offline_storage_ttl_days"), fx.field(got, "offline_storage_ttl_days"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateEntityType(fx.Context(), &UpdateEntityTypeRequest{
+				EntityType: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetEntityType(fx.Context(), &GetEntityTypeRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*EntityType{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateEntityType(fx.Context(), &UpdateEntityTypeRequest{
+				EntityType: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetEntityType(fx.Context(), &GetEntityTypeRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*EntityType{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("monitoring_config", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "monitoring_config")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateEntityType(fx.Context(), &UpdateEntityTypeRequest{
+				EntityType: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetEntityType(fx.Context(), &GetEntityTypeRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*EntityType{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "monitoring_config"), fx.field(got, "monitoring_config"), protocmp.Transform())
+			}
+		})
+		t.Run("offline_storage_ttl_days", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "offline_storage_ttl_days")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateEntityType(fx.Context(), &UpdateEntityTypeRequest{
+				EntityType: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetEntityType(fx.Context(), &GetEntityTypeRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*EntityType{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "offline_storage_ttl_days"), fx.field(got, "offline_storage_ttl_days"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.Name = created.Name
+		msg.Etag = created.Etag
+		updated, err := fx.Service().UpdateEntityType(fx.Context(), &UpdateEntityTypeRequest{
+			EntityType: msg,
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{},
+			},
+		})
+		assert.NilError(t, err)
+		persisted, err := fx.Service().GetEntityType(fx.Context(), &GetEntityTypeRequest{
+			Name: updated.Name,
+		})
+		assert.NilError(t, err)
+		for _, got := range []*EntityType{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "monitoring_config"), fx.field(got, "monitoring_config"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "offline_storage_ttl_days"), fx.field(got, "offline_storage_ttl_days"), protocmp.Transform())
+		}
 	})
 
 	{
@@ -625,6 +974,22 @@ func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) notFoundName(name string
 	return name + "notfound"
 }
 
+func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) field(msg *EntityType, name protoreflect.Name) *EntityType {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &EntityType{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *FeaturestoreServiceEntityTypeTestSuiteConfig) withoutField(msg *EntityType, name protoreflect.Name) *EntityType {
+	cleared := proto.Clone(msg).(*EntityType)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
+}
+
 type FeaturestoreServiceFeatureTestSuiteConfig struct {
 	currParent int
 
@@ -655,6 +1020,9 @@ type FeaturestoreServiceFeatureTestSuiteConfig struct {
 	IDGenerator func() string
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Feature
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -833,6 +1201,437 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) testUpdate(t *testing.T) {
 		})
 		assert.NilError(t, err)
 		assert.Check(t, updated.Etag != created.Etag)
+	})
+
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "disable_monitoring"), fx.field(got, "disable_monitoring"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_column_name"), fx.field(got, "version_column_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "point_of_contact"), fx.field(got, "point_of_contact"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"labels",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "disable_monitoring"), fx.field(got, "disable_monitoring"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_column_name"), fx.field(got, "version_column_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "point_of_contact"), fx.field(got, "point_of_contact"), protocmp.Transform())
+			}
+		})
+		t.Run("disable_monitoring", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"disable_monitoring",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "disable_monitoring"), fx.field(got, "disable_monitoring"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_column_name"), fx.field(got, "version_column_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "point_of_contact"), fx.field(got, "point_of_contact"), protocmp.Transform())
+			}
+		})
+		t.Run("version_column_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"version_column_name",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "disable_monitoring"), fx.field(got, "disable_monitoring"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "version_column_name"), fx.field(got, "version_column_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "point_of_contact"), fx.field(got, "point_of_contact"), protocmp.Transform())
+			}
+		})
+		t.Run("point_of_contact", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"point_of_contact",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "disable_monitoring"), fx.field(got, "disable_monitoring"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_column_name"), fx.field(got, "version_column_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "point_of_contact"), fx.field(got, "point_of_contact"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"description",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(&Feature{}, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "disable_monitoring"), fx.field(got, "disable_monitoring"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_column_name"), fx.field(got, "version_column_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "point_of_contact"), fx.field(got, "point_of_contact"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"labels",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Feature{}, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "disable_monitoring"), fx.field(got, "disable_monitoring"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_column_name"), fx.field(got, "version_column_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "point_of_contact"), fx.field(got, "point_of_contact"), protocmp.Transform())
+			}
+		})
+		t.Run("disable_monitoring", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "disable_monitoring")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"disable_monitoring",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Feature{}, "disable_monitoring"), fx.field(got, "disable_monitoring"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_column_name"), fx.field(got, "version_column_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "point_of_contact"), fx.field(got, "point_of_contact"), protocmp.Transform())
+			}
+		})
+		t.Run("version_column_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "version_column_name")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"version_column_name",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "disable_monitoring"), fx.field(got, "disable_monitoring"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Feature{}, "version_column_name"), fx.field(got, "version_column_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "point_of_contact"), fx.field(got, "point_of_contact"), protocmp.Transform())
+			}
+		})
+		t.Run("point_of_contact", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "point_of_contact")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+				UpdateMask: &fieldmaskpb.FieldMask{
+					Paths: []string{
+						"point_of_contact",
+					},
+				},
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "disable_monitoring"), fx.field(got, "disable_monitoring"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "version_column_name"), fx.field(got, "version_column_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&Feature{}, "point_of_contact"), fx.field(got, "point_of_contact"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("disable_monitoring", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "disable_monitoring")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "disable_monitoring"), fx.field(got, "disable_monitoring"), protocmp.Transform())
+			}
+		})
+		t.Run("version_column_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "version_column_name")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "version_column_name"), fx.field(got, "version_column_name"), protocmp.Transform())
+			}
+		})
+		t.Run("point_of_contact", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "point_of_contact")
+			msg.Name = created.Name
+			msg.Etag = created.Etag
+			updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+				Feature: msg,
+			})
+			assert.NilError(t, err)
+			persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+				Name: updated.Name,
+			})
+			assert.NilError(t, err)
+			for _, got := range []*Feature{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "point_of_contact"), fx.field(got, "point_of_contact"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.Name = created.Name
+		msg.Etag = created.Etag
+		updated, err := fx.Service().UpdateFeature(fx.Context(), &UpdateFeatureRequest{
+			Feature: msg,
+			UpdateMask: &fieldmaskpb.FieldMask{
+				Paths: []string{},
+			},
+		})
+		assert.NilError(t, err)
+		persisted, err := fx.Service().GetFeature(fx.Context(), &GetFeatureRequest{
+			Name: updated.Name,
+		})
+		assert.NilError(t, err)
+		for _, got := range []*Feature{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "disable_monitoring"), fx.field(got, "disable_monitoring"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "version_column_name"), fx.field(got, "version_column_name"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "point_of_contact"), fx.field(got, "point_of_contact"), protocmp.Transform())
+		}
 	})
 
 	{
@@ -1167,6 +1966,22 @@ func (fx *FeaturestoreServiceFeatureTestSuiteConfig) notFoundName(name string) s
 	return name + "notfound"
 }
 
+func (fx *FeaturestoreServiceFeatureTestSuiteConfig) field(msg *Feature, name protoreflect.Name) *Feature {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Feature{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *FeaturestoreServiceFeatureTestSuiteConfig) withoutField(msg *Feature, name protoreflect.Name) *Feature {
+	cleared := proto.Clone(msg).(*Feature)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
+}
+
 type FeaturestoreServiceFeaturestoreTestSuiteConfig struct {
 	currParent int
 
@@ -1190,6 +2005,9 @@ type FeaturestoreServiceFeaturestoreTestSuiteConfig struct {
 	Create func(parent string) *Featurestore
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Featurestore
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -1743,4 +2561,20 @@ func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) create(t *testing.T, p
 func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) notFoundName(name string) string {
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) field(msg *Featurestore, name protoreflect.Name) *Featurestore {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Featurestore{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *FeaturestoreServiceFeaturestoreTestSuiteConfig) withoutField(msg *Featurestore, name protoreflect.Name) *Featurestore {
+	cleared := proto.Clone(msg).(*Featurestore)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }

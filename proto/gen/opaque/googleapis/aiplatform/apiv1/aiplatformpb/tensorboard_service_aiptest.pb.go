@@ -8,6 +8,7 @@ import (
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protocmp "google.golang.org/protobuf/testing/protocmp"
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 	assert "gotest.tools/v3/assert"
@@ -162,6 +163,9 @@ type TensorboardServiceTensorboardTestSuiteConfig struct {
 	Create func(parent string) *Tensorboard
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *Tensorboard
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -417,6 +421,25 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) testUpdate(t *testing.T)
 				req.SetUpdateMask(&fieldmaskpb.FieldMask{
 					Paths: []string{
 						"*",
+					},
+				})
+				_, err := fx.Service().UpdateTensorboard(fx.Context(), req)
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+		})
+
+		// For each required field that Update can change, the method should fail with
+		// InvalidArgument if an update_mask names the field and the request leaves it empty.
+		t.Run("update mask path required", func(t *testing.T) {
+			fx.maybeSkip(t)
+			t.Run("display_name", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "display_name")
+				req := &UpdateTensorboardRequest{}
+				req.SetTensorboard(msg)
+				req.SetUpdateMask(&fieldmaskpb.FieldMask{
+					Paths: []string{
+						"display_name",
 					},
 				})
 				_, err := fx.Service().UpdateTensorboard(fx.Context(), req)
@@ -717,6 +740,22 @@ func (fx *TensorboardServiceTensorboardTestSuiteConfig) notFoundName(name string
 	return name + "notfound"
 }
 
+func (fx *TensorboardServiceTensorboardTestSuiteConfig) field(msg *Tensorboard, name protoreflect.Name) *Tensorboard {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &Tensorboard{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *TensorboardServiceTensorboardTestSuiteConfig) withoutField(msg *Tensorboard, name protoreflect.Name) *Tensorboard {
+	cleared := proto.Clone(msg).(*Tensorboard)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
+}
+
 type TensorboardServiceTensorboardExperimentTestSuiteConfig struct {
 	currParent int
 
@@ -740,6 +779,9 @@ type TensorboardServiceTensorboardExperimentTestSuiteConfig struct {
 	Create func(parent string) *TensorboardExperiment
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *TensorboardExperiment
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -964,6 +1006,269 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) testUpdate(t *
 		updated, err := fx.Service().UpdateTensorboardExperiment(fx.Context(), req)
 		assert.NilError(t, err)
 		assert.Check(t, updated.GetEtag() != created.GetEtag())
+	})
+
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardExperimentRequest{}
+			req.SetTensorboardExperiment(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"display_name",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardExperiment(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardExperimentRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardExperiment(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardExperiment{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardExperimentRequest{}
+			req.SetTensorboardExperiment(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"description",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardExperiment(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardExperimentRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardExperiment(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardExperiment{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardExperimentRequest{}
+			req.SetTensorboardExperiment(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"labels",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardExperiment(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardExperimentRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardExperiment(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardExperiment{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "display_name")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardExperimentRequest{}
+			req.SetTensorboardExperiment(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"display_name",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardExperiment(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardExperimentRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardExperiment(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardExperiment{updated, persisted} {
+				assert.DeepEqual(t, fx.field(&TensorboardExperiment{}, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardExperimentRequest{}
+			req.SetTensorboardExperiment(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"description",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardExperiment(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardExperimentRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardExperiment(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardExperiment{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&TensorboardExperiment{}, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardExperimentRequest{}
+			req.SetTensorboardExperiment(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"labels",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardExperiment(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardExperimentRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardExperiment(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardExperiment{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&TensorboardExperiment{}, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "display_name")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardExperimentRequest{}
+			req.SetTensorboardExperiment(msg)
+			updated, err := fx.Service().UpdateTensorboardExperiment(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardExperimentRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardExperiment(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardExperiment{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardExperimentRequest{}
+			req.SetTensorboardExperiment(msg)
+			updated, err := fx.Service().UpdateTensorboardExperiment(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardExperimentRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardExperiment(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardExperiment{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardExperimentRequest{}
+			req.SetTensorboardExperiment(msg)
+			updated, err := fx.Service().UpdateTensorboardExperiment(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardExperimentRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardExperiment(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardExperiment{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.SetName(created.GetName())
+		msg.SetEtag(created.GetEtag())
+		req := &UpdateTensorboardExperimentRequest{}
+		req.SetTensorboardExperiment(msg)
+		req.SetUpdateMask(&fieldmaskpb.FieldMask{
+			Paths: []string{},
+		})
+		updated, err := fx.Service().UpdateTensorboardExperiment(fx.Context(), req)
+		assert.NilError(t, err)
+		getReq := &GetTensorboardExperimentRequest{}
+		getReq.SetName(updated.GetName())
+		persisted, err := fx.Service().GetTensorboardExperiment(fx.Context(), getReq)
+		assert.NilError(t, err)
+		for _, got := range []*TensorboardExperiment{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+		}
 	})
 
 	{
@@ -1291,6 +1596,22 @@ func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) notFoundName(n
 	return name + "notfound"
 }
 
+func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) field(msg *TensorboardExperiment, name protoreflect.Name) *TensorboardExperiment {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &TensorboardExperiment{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *TensorboardServiceTensorboardExperimentTestSuiteConfig) withoutField(msg *TensorboardExperiment, name protoreflect.Name) *TensorboardExperiment {
+	cleared := proto.Clone(msg).(*TensorboardExperiment)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
+}
+
 type TensorboardServiceTensorboardRunTestSuiteConfig struct {
 	currParent int
 
@@ -1314,6 +1635,9 @@ type TensorboardServiceTensorboardRunTestSuiteConfig struct {
 	Create func(parent string) *TensorboardRun
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *TensorboardRun
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -1580,6 +1904,242 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testUpdate(t *testing
 		assert.Check(t, updated.GetEtag() != created.GetEtag())
 	})
 
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardRunRequest{}
+			req.SetTensorboardRun(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"display_name",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardRun(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardRunRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardRun(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardRun{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardRunRequest{}
+			req.SetTensorboardRun(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"description",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardRun(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardRunRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardRun(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardRun{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardRunRequest{}
+			req.SetTensorboardRun(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"labels",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardRun(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardRunRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardRun(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardRun{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardRunRequest{}
+			req.SetTensorboardRun(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"description",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardRun(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardRunRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardRun(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardRun{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&TensorboardRun{}, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardRunRequest{}
+			req.SetTensorboardRun(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"labels",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardRun(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardRunRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardRun(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardRun{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&TensorboardRun{}, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "display_name")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardRunRequest{}
+			req.SetTensorboardRun(msg)
+			updated, err := fx.Service().UpdateTensorboardRun(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardRunRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardRun(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardRun{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardRunRequest{}
+			req.SetTensorboardRun(msg)
+			updated, err := fx.Service().UpdateTensorboardRun(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardRunRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardRun(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardRun{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("labels", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "labels")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardRunRequest{}
+			req.SetTensorboardRun(msg)
+			updated, err := fx.Service().UpdateTensorboardRun(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardRunRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardRun(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardRun{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.SetName(created.GetName())
+		msg.SetEtag(created.GetEtag())
+		req := &UpdateTensorboardRunRequest{}
+		req.SetTensorboardRun(msg)
+		req.SetUpdateMask(&fieldmaskpb.FieldMask{
+			Paths: []string{},
+		})
+		updated, err := fx.Service().UpdateTensorboardRun(fx.Context(), req)
+		assert.NilError(t, err)
+		getReq := &GetTensorboardRunRequest{}
+		getReq.SetName(updated.GetName())
+		persisted, err := fx.Service().GetTensorboardRun(fx.Context(), getReq)
+		assert.NilError(t, err)
+		for _, got := range []*TensorboardRun{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "labels"), fx.field(got, "labels"), protocmp.Transform())
+		}
+	})
+
 	{
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
@@ -1626,6 +2186,25 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) testUpdate(t *testing
 				req.SetUpdateMask(&fieldmaskpb.FieldMask{
 					Paths: []string{
 						"*",
+					},
+				})
+				_, err := fx.Service().UpdateTensorboardRun(fx.Context(), req)
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+		})
+
+		// For each required field that Update can change, the method should fail with
+		// InvalidArgument if an update_mask names the field and the request leaves it empty.
+		t.Run("update mask path required", func(t *testing.T) {
+			fx.maybeSkip(t)
+			t.Run("display_name", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "display_name")
+				req := &UpdateTensorboardRunRequest{}
+				req.SetTensorboardRun(msg)
+				req.SetUpdateMask(&fieldmaskpb.FieldMask{
+					Paths: []string{
+						"display_name",
 					},
 				})
 				_, err := fx.Service().UpdateTensorboardRun(fx.Context(), req)
@@ -1930,6 +2509,22 @@ func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) notFoundName(name str
 	return name + "notfound"
 }
 
+func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) field(msg *TensorboardRun, name protoreflect.Name) *TensorboardRun {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &TensorboardRun{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *TensorboardServiceTensorboardRunTestSuiteConfig) withoutField(msg *TensorboardRun, name protoreflect.Name) *TensorboardRun {
+	cleared := proto.Clone(msg).(*TensorboardRun)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
+}
+
 type TensorboardServiceTensorboardTimeSeriesTestSuiteConfig struct {
 	currParent int
 
@@ -1953,6 +2548,9 @@ type TensorboardServiceTensorboardTimeSeriesTestSuiteConfig struct {
 	Create func(parent string) *TensorboardTimeSeries
 	// Update should return a resource which is valid to update, i.e.
 	// all required fields set.
+	// The tests of update masks compare each field that Update can change with the
+	// value it had after Create, so they find most when Create and Update set each
+	// such field, to different values.
 	Update func(parent string) *TensorboardTimeSeries
 	// Normalize, if non-nil, changes a copy of each resource before a test compares it
 	// with another, such as to clear a field that the service returns from one method only.
@@ -2235,6 +2833,242 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testUpdate(t *
 		assert.Check(t, updated.GetEtag() != created.GetEtag())
 	})
 
+	// For each field that Update can change, an update_mask that names only the field
+	// should give it the value of the request, and keep the others.
+	t.Run("update mask path", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardTimeSeriesRequest{}
+			req.SetTensorboardTimeSeries(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"display_name",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardTimeSeries(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardTimeSeriesRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardTimeSeries(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardTimeSeries{updated, persisted} {
+				assert.DeepEqual(t, fx.field(msg, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "plugin_data"), fx.field(got, "plugin_data"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardTimeSeriesRequest{}
+			req.SetTensorboardTimeSeries(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"description",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardTimeSeries(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardTimeSeriesRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardTimeSeries(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardTimeSeries{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "plugin_data"), fx.field(got, "plugin_data"), protocmp.Transform())
+			}
+		})
+		t.Run("plugin_data", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardTimeSeriesRequest{}
+			req.SetTensorboardTimeSeries(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"plugin_data",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardTimeSeries(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardTimeSeriesRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardTimeSeries(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardTimeSeries{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(msg, "plugin_data"), fx.field(got, "plugin_data"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each optional field that Update can change, an update_mask that names the field
+	// should clear it when the request leaves it empty.
+	t.Run("update mask path clears", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardTimeSeriesRequest{}
+			req.SetTensorboardTimeSeries(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"description",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardTimeSeries(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardTimeSeriesRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardTimeSeries(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardTimeSeries{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&TensorboardTimeSeries{}, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "plugin_data"), fx.field(got, "plugin_data"), protocmp.Transform())
+			}
+		})
+		t.Run("plugin_data", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "plugin_data")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardTimeSeriesRequest{}
+			req.SetTensorboardTimeSeries(msg)
+			req.SetUpdateMask(&fieldmaskpb.FieldMask{
+				Paths: []string{
+					"plugin_data",
+				},
+			})
+			updated, err := fx.Service().UpdateTensorboardTimeSeries(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardTimeSeriesRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardTimeSeries(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardTimeSeries{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+				assert.DeepEqual(t, fx.field(&TensorboardTimeSeries{}, "plugin_data"), fx.field(got, "plugin_data"), protocmp.Transform())
+			}
+		})
+	})
+
+	// For each field that Update can change, an update without update_mask should keep the
+	// field when the request leaves it empty, as it updates only the fields the request sets.
+	t.Run("update mask unset", func(t *testing.T) {
+		fx.maybeSkip(t)
+		t.Run("display_name", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "display_name")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardTimeSeriesRequest{}
+			req.SetTensorboardTimeSeries(msg)
+			updated, err := fx.Service().UpdateTensorboardTimeSeries(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardTimeSeriesRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardTimeSeries(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardTimeSeries{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			}
+		})
+		t.Run("description", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "description")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardTimeSeriesRequest{}
+			req.SetTensorboardTimeSeries(msg)
+			updated, err := fx.Service().UpdateTensorboardTimeSeries(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardTimeSeriesRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardTimeSeries(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardTimeSeries{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			}
+		})
+		t.Run("plugin_data", func(t *testing.T) {
+			fx.maybeSkip(t)
+			parent := fx.nextParent(t, false)
+			created := fx.create(t, parent)
+			msg := fx.Update(parent)
+			msg = fx.withoutField(msg, "plugin_data")
+			msg.SetName(created.GetName())
+			msg.SetEtag(created.GetEtag())
+			req := &UpdateTensorboardTimeSeriesRequest{}
+			req.SetTensorboardTimeSeries(msg)
+			updated, err := fx.Service().UpdateTensorboardTimeSeries(fx.Context(), req)
+			assert.NilError(t, err)
+			getReq := &GetTensorboardTimeSeriesRequest{}
+			getReq.SetName(updated.GetName())
+			persisted, err := fx.Service().GetTensorboardTimeSeries(fx.Context(), getReq)
+			assert.NilError(t, err)
+			for _, got := range []*TensorboardTimeSeries{updated, persisted} {
+				assert.DeepEqual(t, fx.field(created, "plugin_data"), fx.field(got, "plugin_data"), protocmp.Transform())
+			}
+		})
+	})
+
+	// An update_mask without paths should change no field.
+	t.Run("update mask empty", func(t *testing.T) {
+		fx.maybeSkip(t)
+		parent := fx.nextParent(t, false)
+		created := fx.create(t, parent)
+		msg := fx.Update(parent)
+		msg.SetName(created.GetName())
+		msg.SetEtag(created.GetEtag())
+		req := &UpdateTensorboardTimeSeriesRequest{}
+		req.SetTensorboardTimeSeries(msg)
+		req.SetUpdateMask(&fieldmaskpb.FieldMask{
+			Paths: []string{},
+		})
+		updated, err := fx.Service().UpdateTensorboardTimeSeries(fx.Context(), req)
+		assert.NilError(t, err)
+		getReq := &GetTensorboardTimeSeriesRequest{}
+		getReq.SetName(updated.GetName())
+		persisted, err := fx.Service().GetTensorboardTimeSeries(fx.Context(), getReq)
+		assert.NilError(t, err)
+		for _, got := range []*TensorboardTimeSeries{updated, persisted} {
+			assert.DeepEqual(t, fx.field(created, "display_name"), fx.field(got, "display_name"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "description"), fx.field(got, "description"), protocmp.Transform())
+			assert.DeepEqual(t, fx.field(created, "plugin_data"), fx.field(got, "plugin_data"), protocmp.Transform())
+		}
+	})
+
 	{
 		parent := fx.nextParent(t, false)
 		created := fx.create(t, parent)
@@ -2281,6 +3115,25 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) testUpdate(t *
 				req.SetUpdateMask(&fieldmaskpb.FieldMask{
 					Paths: []string{
 						"*",
+					},
+				})
+				_, err := fx.Service().UpdateTensorboardTimeSeries(fx.Context(), req)
+				assert.Equal(t, codes.InvalidArgument, status.Code(err), err)
+			})
+		})
+
+		// For each required field that Update can change, the method should fail with
+		// InvalidArgument if an update_mask names the field and the request leaves it empty.
+		t.Run("update mask path required", func(t *testing.T) {
+			fx.maybeSkip(t)
+			t.Run("display_name", func(t *testing.T) {
+				fx.maybeSkip(t)
+				msg := fx.withoutField(created, "display_name")
+				req := &UpdateTensorboardTimeSeriesRequest{}
+				req.SetTensorboardTimeSeries(msg)
+				req.SetUpdateMask(&fieldmaskpb.FieldMask{
+					Paths: []string{
+						"display_name",
 					},
 				})
 				_, err := fx.Service().UpdateTensorboardTimeSeries(fx.Context(), req)
@@ -2583,4 +3436,20 @@ func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) create(t *test
 func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) notFoundName(name string) string {
 	// appending to the resource name ensures it is valid
 	return name + "notfound"
+}
+
+func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) field(msg *TensorboardTimeSeries, name protoreflect.Name) *TensorboardTimeSeries {
+	msg = fx.normalize(msg)
+	fd := msg.ProtoReflect().Descriptor().Fields().ByName(name)
+	only := &TensorboardTimeSeries{}
+	if msg.ProtoReflect().Has(fd) {
+		only.ProtoReflect().Set(fd, msg.ProtoReflect().Get(fd))
+	}
+	return only
+}
+
+func (fx *TensorboardServiceTensorboardTimeSeriesTestSuiteConfig) withoutField(msg *TensorboardTimeSeries, name protoreflect.Name) *TensorboardTimeSeries {
+	cleared := proto.Clone(msg).(*TensorboardTimeSeries)
+	cleared.ProtoReflect().Clear(cleared.ProtoReflect().Descriptor().Fields().ByName(name))
+	return cleared
 }
